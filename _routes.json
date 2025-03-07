@@ -1,17 +1,5 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": [],
-  "routes": [
-    {
-      "src": "/(.*)\\.(?:jpg|jpeg|gif|png|ico|css|js|woff2)$",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "exclude": []
 } 
