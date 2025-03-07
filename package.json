@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "npm run build && npx wrangler pages deploy .next",
+    "deploy": "npm run build && npx wrangler pages deploy out",
     "pages:build": "npm install && next build",
-    "pages:deploy": "npm run pages:build && npx wrangler pages deploy .next"
+    "pages:deploy": "npm run pages:build && npx wrangler pages deploy out"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
