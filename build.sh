@@ -18,8 +18,9 @@ if [ ! -d "out" ]; then
   cp -r public/* out/
 fi
 
-# Copy routing configuration files
-cp _routes.json out/
+# Copy configuration files
+cp _worker.js out/
+cp _headers out/
 cp _redirects out/
 
 # Remove unnecessary files
