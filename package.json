@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "deploy": "npm run build && npx wrangler pages deploy .next",
-    "pages:build": "npm install --prefer-offline && next build",
+    "pages:build": "npm install && next build",
     "pages:deploy": "npm run pages:build && npx wrangler pages deploy .next"
   },
   "dependencies": {
