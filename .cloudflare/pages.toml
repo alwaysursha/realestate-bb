@@ -1,0 +1,3 @@
+[build]
+command = "./build.sh"
+output_directory = ".next" 

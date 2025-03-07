@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M60 15l20 30h40l20-30" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+  <path d="M80 45l20-30l20 30" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+  <text x="100" y="35" font-family="Arial" font-size="16" fill="#1a1a1a" text-anchor="middle">MERAAS</text>
+</svg> 

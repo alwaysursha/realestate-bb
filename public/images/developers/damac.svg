@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="40" y="15" width="120" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <path d="M50 30h20l5-10h10l5 10h20" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+  <text x="100" y="35" font-family="Arial" font-size="16" fill="#1a1a1a" text-anchor="middle">DAMAC</text>
+</svg> 

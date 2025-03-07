@@ -1,0 +1,10 @@
+# Redirects and rewrites for Cloudflare Pages
+
+# Handle SPA fallback
+/*    /index.html   200
+
+# Redirect www to non-www
+https://www.real-estate-projects.pages.dev/*    https://real-estate-projects.pages.dev/:splat  301!
+
+# Redirect old paths to new paths if needed
+# /old-path    /new-path    301 
