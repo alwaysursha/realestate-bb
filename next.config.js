@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   images: {
     unoptimized: true,
     domains: ['images.unsplash.com', 'plus.unsplash.com'],
@@ -22,20 +23,23 @@ const nextConfig = {
         chunks: 'all',
         maxInitialRequests: 25,
         minSize: 20000,
-        maxSize: 20 * 1024 * 1024, // 20MB max chunk size
+        maxSize: 15 * 1024 * 1024, // 15MB max chunk size
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name(module) {
               const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
-              return `vendor.${packageName.replace('@', '')}`;
+              return `npm.${packageName.replace('@', '')}`;
             },
-            priority: -10,
+            priority: 10,
+            enforce: true,
           },
-          default: {
+          commons: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'commons',
+            chunks: 'all',
             minChunks: 2,
-            priority: -20,
-            reuseExistingChunk: true,
+            priority: 1,
           },
         },
       },
@@ -51,7 +55,6 @@ const nextConfig = {
   },
 
   // Cloudflare Pages specific configuration
-  output: 'standalone',
   poweredByHeader: false,
   generateEtags: false,
 };
