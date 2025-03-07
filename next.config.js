@@ -15,7 +15,6 @@ const nextConfig = {
 
   // Exclude backup files and directories from the build
   webpack: (config, { isServer }) => {
-    // Optimize chunk sizes
     config.optimization = {
       ...config.optimization,
       minimize: true,
@@ -27,19 +26,15 @@ const nextConfig = {
         cacheGroups: {
           vendor: {
             test: /[\\/]node_modules[\\/]/,
-            name(module) {
-              const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
-              return `npm.${packageName.replace('@', '')}`;
-            },
-            priority: 10,
-            enforce: true,
-          },
-          commons: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'commons',
+            name: 'vendor',
             chunks: 'all',
+            priority: 10,
+          },
+          common: {
             minChunks: 2,
             priority: 1,
+            reuseExistingChunk: true,
+            name: 'common',
           },
         },
       },

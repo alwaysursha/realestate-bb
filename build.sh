@@ -7,7 +7,7 @@ rm -rf .next out
 npm install
 
 # Build the application with production optimization
-NEXT_TELEMETRY_DISABLED=1 npm run build
+NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production npm run build
 
 # Remove unnecessary files
 rm -rf .next/cache/
