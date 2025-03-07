@@ -18,6 +18,10 @@ if [ ! -d "out" ]; then
   cp -r public/* out/
 fi
 
+# Copy routing configuration files
+cp _routes.json out/
+cp _redirects out/
+
 # Remove unnecessary files
 rm -rf .next/cache/
 find out -type f -size +20M -delete
