@@ -1,7 +1,19 @@
 # Redirects and rewrites for Cloudflare Pages
 
-# Handle SPA fallback
-/* /index.html 200
+# Redirect all routes to index.html
+/*    /index.html   200
+
+# Handle static files
+/*.js     /:splat   200
+/*.css    /:splat   200
+/*.png    /:splat   200
+/*.jpg    /:splat   200
+/*.ico    /:splat   200
+/*.svg    /:splat   200
+/*.woff2  /:splat   200
+
+# Handle Next.js static files
+/_next/*  /:splat   200
 
 # Redirect www to non-www
 https://www.real-estate-projects.pages.dev/*    https://real-estate-projects.pages.dev/:splat  301!

@@ -19,7 +19,6 @@ if [ ! -d "out" ]; then
 fi
 
 # Copy configuration files
-cp _worker.js out/
 cp _headers out/
 cp _redirects out/
 cp _routes.json out/
