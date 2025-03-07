@@ -12,7 +12,8 @@ const nextConfig = {
       },
     ],
   },
-  trailingSlash: true,
+  trailingSlash: false,
+  assetPrefix: '',
 
   // Exclude backup files and directories from the build
   webpack: (config, { isServer }) => {
@@ -26,17 +27,17 @@ const nextConfig = {
         maxSize: 15 * 1024 * 1024, // 15MB max chunk size
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/]/,
             name: 'vendor',
+            test: /[\\/]node_modules[\\/]/,
             chunks: 'all',
-            priority: 10,
           },
           common: {
-            minChunks: 2,
-            priority: 1,
-            reuseExistingChunk: true,
             name: 'common',
-          },
+            minChunks: 2,
+            chunks: 'all',
+            reuseExistingChunk: true,
+            priority: -10
+          }
         },
       },
     };
