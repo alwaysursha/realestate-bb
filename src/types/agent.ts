@@ -48,45 +48,28 @@ export interface AgentPortfolio {
 
 export interface Agent {
   id: string;
-  userId: string; // Reference to User account
+  userId?: string;
   name: string;
-  title: string;
   email: string;
   phone: string;
-  photo?: string;
-  licenseNumber: string;
-  licenseExpiry: Date;
-  specializations: AgentSpecialization[];
-  languages: AgentLanguage[];
-  experience: number; // years
   bio: string;
-  status: AgentStatus;
-  certifications: AgentCertification[];
-  performance: AgentPerformance;
-  socialMedia: AgentSocialMedia;
-  portfolio: AgentPortfolio;
-  assignedProperties: string[]; // Property IDs
-  schedule: {
-    availableDays: ('Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday')[];
-    availableHours: {
-      start: string; // HH:mm format
-      end: string;
-    };
-    outOfOffice?: {
-      startDate: Date;
-      endDate: Date;
-      reason: string;
-    };
-  };
-  documents: {
-    type: string;
-    name: string;
-    url: string;
-    uploadDate: Date;
-    expiryDate?: Date;
-  }[];
-  createdAt: Date;
-  updatedAt: Date;
+  specialization: string[];
+  profileImage?: string;
+  properties?: string[];
+  rating?: number;
+  reviews?: number;
+  active: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  
+  // Additional fields for admin panel
+  status?: AgentStatus;
+  specializations?: string[];
+  title?: string;
+  licenseNumber?: string;
+  licenseExpiry?: Date;
+  languages?: string[];
+  experience?: number;
 }
 
 export interface AgentCreateInput {

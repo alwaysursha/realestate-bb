@@ -7,9 +7,10 @@ import Link from 'next/link';
 import AdminCard from '@/components/admin/AdminCard';
 import StatsCard from '@/components/admin/StatsCard';
 import ActivityItem from '@/components/admin/ActivityItem';
-import { getAllProperties, getPropertyStats } from '@/services/propertiesService';
+import { getAllProperties, getPropertyStats, clearAndReinitializeProperties } from '@/services/propertiesService';
 import { userService } from '@/services/userService';
 import { inquiryService } from '@/services/inquiryService';
+import { reportService } from '@/services/reportService';
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAdminAuth();
@@ -26,6 +27,11 @@ export default function AdminDashboard() {
   const [inquiryChange, setInquiryChange] = useState<number>(0);
   const [isPositiveInquiryChange, setIsPositiveInquiryChange] = useState<boolean>(true);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState<boolean>(true);
+  const [totalViews, setTotalViews] = useState<number>(0);
+  const [viewsChange, setViewsChange] = useState<number>(0);
+  const [isViewsChangePositive, setIsViewsChangePositive] = useState<boolean>(true);
+  const [isLoadingViews, setIsLoadingViews] = useState<boolean>(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
 
   // Check authentication
   useEffect(() => {
@@ -38,6 +44,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const initializeMockData = async () => {
       await inquiryService.initializeMockData();
+      // Reset properties to get more realistic view counts
+      await clearAndReinitializeProperties();
     };
     initializeMockData();
   }, []);
@@ -51,6 +59,14 @@ export default function AdminDashboard() {
         setTotalProperties(propertyStats.total);
         setMonthlyChange(propertyStats.monthlyChange);
         setIsPositiveChange(propertyStats.isPositive);
+        
+        // Set view stats
+        if (propertyStats.totalViews !== undefined) {
+          setTotalViews(propertyStats.totalViews);
+          setViewsChange(propertyStats.viewsChange || 0);
+          setIsViewsChangePositive(propertyStats.isViewsChangePositive || true);
+          setIsLoadingViews(false);
+        }
 
         // Fetch user stats
         const userStats = await userService.getUserStats();
@@ -115,15 +131,16 @@ export default function AdminDashboard() {
     },
     {
       title: 'Properties Viewed',
-      value: '12.5K',
+      value: isLoadingViews ? '...' : totalViews.toLocaleString(),
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
       ),
-      change: { value: 23, isPositive: true },
+      change: { value: viewsChange, isPositive: isViewsChangePositive },
       colorClass: 'bg-yellow-500',
+      onClick: () => router.push('/admin/analytics')
     },
   ];
 
@@ -277,6 +294,27 @@ export default function AdminDashboard() {
     setNotes(notes.filter(note => note.id !== id));
   };
 
+  // Generate and download report
+  const handleGenerateReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      const reportData = await reportService.generateReport();
+      const csv = reportService.convertToCSV(reportData);
+      
+      // Generate filename with current date
+      const date = new Date();
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const filename = `real-estate-report-${formattedDate}.csv`;
+      
+      reportService.downloadCSV(csv, filename);
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      alert('Failed to generate report. Please try again.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   // If still loading authentication state, show loading spinner
   if (isLoading) {
     return (
@@ -297,8 +335,27 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <div className="mt-3 sm:mt-0">
-          <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-            Generate Report
+          <button 
+            className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center ${isGeneratingReport ? 'opacity-75 cursor-not-allowed' : ''}`}
+            onClick={handleGenerateReport}
+            disabled={isGeneratingReport}
+          >
+            {isGeneratingReport ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Generate Report
+              </>
+            )}
           </button>
         </div>
       </div>

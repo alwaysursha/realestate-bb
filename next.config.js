@@ -12,8 +12,6 @@ const nextConfig = {
       },
     ],
   },
-  trailingSlash: false,
-  assetPrefix: '',
 
   // Exclude backup files and directories from the build
   webpack: (config, { isServer }) => {
@@ -51,9 +49,9 @@ const nextConfig = {
     return config;
   },
 
-  // Cloudflare Pages specific configuration
+  // Development configuration
   poweredByHeader: false,
-  generateEtags: false,
+  generateEtags: false
 };
 
 module.exports = nextConfig; 

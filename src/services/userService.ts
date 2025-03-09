@@ -1,63 +1,84 @@
 import { User, UserCreateInput, UserUpdateInput, UserRole, UserStatus, ROLE_PERMISSIONS } from '@/types/user';
+import { initialUsers } from '@/data/users';
+
+const USERS_STORAGE_KEY = 'real_estate_users';
 
 class UserService {
-  private users: User[] = [
-    {
-      id: '1',
-      name: 'Admin User',
-      email: 'admin@builderbookings.com',
-      role: 'Super Admin',
-      status: 'Active',
-      createdAt: new Date(),
-      permissions: ROLE_PERMISSIONS['Super Admin'],
+  private getUsersFromStorage(): User[] {
+    if (typeof window === 'undefined') return [];
+    
+    const stored = localStorage.getItem(USERS_STORAGE_KEY);
+    if (!stored) {
+      this.saveUsersToStorage(initialUsers);
+      return initialUsers;
     }
-  ];
+    
+    return JSON.parse(stored, (key, value) => {
+      if (key === 'createdAt' || key === 'lastLogin') return new Date(value);
+      return value;
+    });
+  }
+
+  private saveUsersToStorage(users: User[]): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  }
 
   async getUsers(): Promise<User[]> {
-    return this.users;
+    return this.getUsersFromStorage();
   }
 
   async getUserById(id: string): Promise<User | null> {
-    return this.users.find(user => user.id === id) || null;
+    const users = this.getUsersFromStorage();
+    return users.find(user => user.id === id) || null;
   }
 
   async createUser(input: UserCreateInput): Promise<User> {
+    const users = this.getUsersFromStorage();
+    
     const newUser: User = {
       id: Math.random().toString(36).substr(2, 9),
       ...input,
       createdAt: new Date(),
+      lastLogin: new Date(),
       permissions: ROLE_PERMISSIONS[input.role],
       status: input.status || 'Active',
     };
     
-    this.users.push(newUser);
+    users.push(newUser);
+    this.saveUsersToStorage(users);
     return newUser;
   }
 
   async updateUser(id: string, input: UserUpdateInput): Promise<User | null> {
-    const index = this.users.findIndex(user => user.id === id);
+    const users = this.getUsersFromStorage();
+    const index = users.findIndex(user => user.id === id);
     if (index === -1) return null;
 
     const updatedUser = {
-      ...this.users[index],
+      ...users[index],
       ...input,
-      permissions: input.role ? ROLE_PERMISSIONS[input.role] : this.users[index].permissions,
+      permissions: input.role ? ROLE_PERMISSIONS[input.role] : users[index].permissions,
     };
 
-    this.users[index] = updatedUser;
+    users[index] = updatedUser;
+    this.saveUsersToStorage(users);
     return updatedUser;
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const index = this.users.findIndex(user => user.id === id);
+    const users = this.getUsersFromStorage();
+    const index = users.findIndex(user => user.id === id);
     if (index === -1) return false;
 
-    this.users.splice(index, 1);
+    users.splice(index, 1);
+    this.saveUsersToStorage(users);
     return true;
   }
 
   async getUsersByRole(role: UserRole): Promise<User[]> {
-    return this.users.filter(user => user.role === role);
+    const users = this.getUsersFromStorage();
+    return users.filter(user => user.role === role);
   }
 
   async updateUserStatus(id: string, status: UserStatus): Promise<User | null> {
@@ -97,6 +118,14 @@ class UserService {
       monthlyChange: Math.abs(Math.round(change)),
       isPositive: change >= 0
     };
+  }
+
+  // Initialize or reset users data
+  async resetUsers(): Promise<User[]> {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(USERS_STORAGE_KEY);
+    }
+    return this.getUsersFromStorage();
   }
 }
 

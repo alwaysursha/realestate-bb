@@ -1,6 +1,6 @@
-export type UserRole = 'Super Admin' | 'Admin' | 'Agent' | 'Editor' | 'Viewer';
+export type UserRole = 'Admin' | 'Agent' | 'User' | 'Editor';
 
-export type UserStatus = 'Active' | 'Inactive' | 'Pending' | 'Suspended';
+export type UserStatus = 'Active' | 'Inactive' | 'Suspended';
 
 export interface User {
   id: string;
@@ -8,18 +8,18 @@ export interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
+  permissions: string[];
   avatar?: string;
   createdAt: Date;
   lastLogin?: Date;
-  permissions: string[];
 }
 
 export interface UserCreateInput {
   name: string;
   email: string;
-  password: string;
   role: UserRole;
   status?: UserStatus;
+  avatar?: string;
 }
 
 export interface UserUpdateInput {
@@ -27,34 +27,12 @@ export interface UserUpdateInput {
   email?: string;
   role?: UserRole;
   status?: UserStatus;
-  password?: string;
+  avatar?: string;
 }
 
-export const USER_PERMISSIONS = {
-  MANAGE_USERS: 'manage_users',
-  MANAGE_PROPERTIES: 'manage_properties',
-  VIEW_PROPERTIES: 'view_properties',
-  EDIT_PROPERTIES: 'edit_properties',
-  MANAGE_SETTINGS: 'manage_settings',
-} as const;
-
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  'Super Admin': Object.values(USER_PERMISSIONS),
-  'Admin': [
-    USER_PERMISSIONS.MANAGE_USERS,
-    USER_PERMISSIONS.MANAGE_PROPERTIES,
-    USER_PERMISSIONS.VIEW_PROPERTIES,
-    USER_PERMISSIONS.EDIT_PROPERTIES,
-  ],
-  'Agent': [
-    USER_PERMISSIONS.VIEW_PROPERTIES,
-    USER_PERMISSIONS.EDIT_PROPERTIES,
-  ],
-  'Editor': [
-    USER_PERMISSIONS.VIEW_PROPERTIES,
-    USER_PERMISSIONS.EDIT_PROPERTIES,
-  ],
-  'Viewer': [
-    USER_PERMISSIONS.VIEW_PROPERTIES,
-  ],
+  'Admin': ['all'],
+  'Agent': ['view_properties', 'edit_properties', 'view_clients'],
+  'User': ['view_properties'],
+  'Editor': ['view_properties', 'edit_properties']
 }; 

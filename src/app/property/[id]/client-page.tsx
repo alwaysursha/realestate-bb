@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Script from 'next/script';
 import { Playfair_Display } from 'next/font/google';
+import { FaHeart, FaRegHeart, FaShare } from 'react-icons/fa';
 import Map from '../../../components/Map';
 import { Property } from '../../../types/property';
 
@@ -17,6 +18,46 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showThumbnails, setShowThumbnails] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // Check if property is in favorites on component mount
+  useEffect(() => {
+    const storedFavorites = localStorage.getItem('favorites');
+    if (storedFavorites) {
+      const favorites = JSON.parse(storedFavorites);
+      setIsFavorite(favorites.includes(property.id));
+    }
+  }, [property.id]);
+
+  const toggleFavorite = () => {
+    const storedFavorites = localStorage.getItem('favorites');
+    let favorites = storedFavorites ? JSON.parse(storedFavorites) : [];
+    
+    if (isFavorite) {
+      favorites = favorites.filter((id: number | string) => id !== property.id);
+    } else {
+      favorites.push(property.id);
+    }
+    
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: property.title,
+        text: property.description,
+        url: window.location.href,
+      })
+      .catch((error) => console.log('Error sharing', error));
+    } else {
+      // Fallback for browsers that don't support the Web Share API
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => alert('Link copied to clipboard!'))
+        .catch((error) => console.error('Could not copy text: ', error));
+    }
+  };
 
   return (
     <>
@@ -37,6 +78,24 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
             />
             {/* Dark overlay with gradient */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="absolute top-4 right-4 flex space-x-2">
+            <button
+              onClick={toggleFavorite}
+              className={`bg-white/90 p-3 rounded-full hover:bg-white transition-colors shadow-lg ${isFavorite ? 'text-red-500' : 'text-gray-700 hover:text-red-500'}`}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              {isFavorite ? <FaHeart size={20} /> : <FaRegHeart size={20} />}
+            </button>
+            <button
+              onClick={handleShare}
+              className="bg-white/90 p-3 rounded-full hover:bg-white transition-colors shadow-lg text-gray-700 hover:text-blue-600"
+              aria-label="Share property"
+            >
+              <FaShare size={20} />
+            </button>
           </div>
           
           {/* Navigation Arrows */}
@@ -184,7 +243,7 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
               <div>
                 <h2 className={`${playfair.className} text-2xl font-bold mb-4`}>Location</h2>
                 <div className="h-[400px] rounded-lg overflow-hidden">
-                  {isMapLoaded && (
+                  {isMapLoaded && property.coordinates && (
                     <Map 
                       center={property.coordinates} 
                       zoom={15} 
@@ -194,6 +253,11 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
                       }]}
                       address={property.address || property.location}
                     />
+                  )}
+                  {isMapLoaded && !property.coordinates && (
+                    <div className="h-full flex items-center justify-center bg-gray-100">
+                      <p className="text-gray-500">Map location not available</p>
+                    </div>
                   )}
                 </div>
               </div>

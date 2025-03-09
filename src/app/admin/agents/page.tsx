@@ -3,7 +3,7 @@
 import { useEffect, useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Agent, AgentCreateInput, AgentStatus, AgentSpecialization, AgentLanguage } from '@/types/agent';
+import { Agent, AgentCreateInput, AgentUpdateInput, AgentStatus, AgentSpecialization } from '@/types/agent';
 import { Toaster, toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { 
@@ -11,13 +11,12 @@ import {
   PhoneIcon, 
   EnvelopeIcon,
   DocumentTextIcon,
-  CalendarIcon,
-  StarIcon,
-  ChartBarIcon,
+  PencilIcon,
   XMarkIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
 import AgentForm from '@/components/AgentForm';
+import { agentService } from '@/services/agentService';
 
 export default function AdminAgents() {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -37,8 +36,7 @@ export default function AdminAgents() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
-      const data = await response.json();
+      const data = await agentService.getAgents();
       setAgents(data);
       setLoading(false);
     } catch (error) {
@@ -47,28 +45,9 @@ export default function AdminAgents() {
     }
   };
 
-  const filteredAgents = agents.filter(agent => {
-    const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
-    const matchesSpecialization = filterSpecialization === 'all' || 
-      agent.specializations.includes(filterSpecialization);
-    const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agent.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesStatus && matchesSpecialization && matchesSearch;
-  });
-
   const handleCreateAgent = async (input: AgentCreateInput) => {
     try {
-      const response = await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input)
-      });
-      
-      if (!response.ok) throw new Error('Failed to create agent');
-      
-      const newAgent = await response.json();
+      const newAgent = await agentService.createAgent(input);
       setAgents(prev => [...prev, newAgent]);
       toast.success('Agent created successfully');
       setIsModalOpen(false);
@@ -77,34 +56,74 @@ export default function AdminAgents() {
     }
   };
 
+  const handleUpdateAgent = async (id: string, input: AgentUpdateInput) => {
+    try {
+      const updatedAgent = await agentService.updateAgent(id, input);
+      if (updatedAgent) {
+        setAgents(prev => prev.map(agent => 
+          agent.id === id ? updatedAgent : agent
+        ));
+        toast.success('Agent updated successfully');
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      toast.error('Failed to update agent');
+    }
+  };
+
   const handleUpdateStatus = async (agentId: string, status: AgentStatus) => {
     try {
-      const response = await fetch(`/api/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'updateStatus', data: { status } })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update status');
-      
-      const updatedAgent = await response.json();
-      setAgents(prev => prev.map(agent => 
-        agent.id === agentId ? updatedAgent : agent
-      ));
-      toast.success('Status updated successfully');
+      const updatedAgent = await agentService.updateAgentStatus(agentId, status);
+      if (updatedAgent) {
+        setAgents(prev => prev.map(agent => 
+          agent.id === agentId ? updatedAgent : agent
+        ));
+        toast.success('Status updated successfully');
+      }
     } catch (error) {
       toast.error('Failed to update status');
     }
   };
 
-  if (isLoading || loading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>;
-  }
+  const handleDeleteAgent = async (agentId: string) => {
+    if (!confirm('Are you sure you want to delete this agent?')) return;
 
-  if (!isAuthenticated) {
-    return <div>Access denied. Please log in as admin.</div>;
+    try {
+      const success = await agentService.deleteAgent(agentId);
+      if (success) {
+        setAgents(prev => prev.filter(agent => agent.id !== agentId));
+        toast.success('Agent deleted successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to delete agent');
+    }
+  };
+
+  const handleFormSubmit = async (input: AgentCreateInput | AgentUpdateInput) => {
+    if (selectedAgent) {
+      await handleUpdateAgent(selectedAgent.id, input as AgentUpdateInput);
+    } else {
+      await handleCreateAgent(input as AgentCreateInput);
+    }
+  };
+
+  const filteredAgents = agents.filter(agent => {
+    const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
+    const matchesSpecialization = filterSpecialization === 'all' || 
+      (agent.specializations && agent.specializations.includes(filterSpecialization));
+    const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      agent.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (agent.licenseNumber && agent.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesStatus && matchesSpecialization && matchesSearch;
+  });
+
+  if (isLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -113,15 +132,15 @@ export default function AdminAgents() {
       
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Agents Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Manage Agents</h1>
         <button
           onClick={() => {
             setSelectedAgent(undefined);
             setIsModalOpen(true);
           }}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
         >
-          <PlusIcon className="h-5 w-5" />
+          <PlusIcon className="h-5 w-5 mr-2" />
           Add Agent
         </button>
       </div>
@@ -131,24 +150,24 @@ export default function AdminAgents() {
         <input
           type="text"
           placeholder="Search agents..."
-          className="border rounded-lg px-4 py-2"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <select
-          className="border rounded-lg px-4 py-2"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as AgentStatus | 'all')}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">All Statuses</option>
+          <option value="all">All Status</option>
           <option value="Active">Active</option>
           <option value="On Leave">On Leave</option>
           <option value="Inactive">Inactive</option>
         </select>
         <select
-          className="border rounded-lg px-4 py-2"
           value={filterSpecialization}
           onChange={(e) => setFilterSpecialization(e.target.value as AgentSpecialization | 'all')}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Specializations</option>
           <option value="Luxury">Luxury</option>
@@ -161,89 +180,26 @@ export default function AdminAgents() {
 
       {/* Agents Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAgents.map(agent => (
+        {filteredAgents.map((agent) => (
           <div key={agent.id} className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="relative h-48">
-              {agent.photo ? (
+              {agent.profileImage ? (
                 <Image
-                  src={agent.photo}
+                  src={agent.profileImage}
                   alt={agent.name}
                   fill
-                  className="object-cover"
+                  style={{ objectFit: 'cover' }}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  <UserCircleIcon className="h-24 w-24 text-gray-400" />
+                <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+                  <UserCircleIcon className="h-20 w-20 text-gray-400" />
                 </div>
               )}
-            </div>
-            
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{agent.name}</h3>
-                  <p className="text-gray-600">{agent.title}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-sm ${
-                  agent.status === 'Active' ? 'bg-green-100 text-green-800' :
-                  agent.status === 'On Leave' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {agent.status}
-                </span>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <EnvelopeIcon className="h-4 w-4" />
-                  <span className="text-sm">{agent.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <PhoneIcon className="h-4 w-4" />
-                  <span className="text-sm">{agent.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <DocumentTextIcon className="h-4 w-4" />
-                  <span className="text-sm">License: {agent.licenseNumber}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                {agent.specializations.map(spec => (
-                  <span key={spec} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                    {spec}
-                  </span>
-                ))}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                  <div>
-                    <div className="font-semibold">{agent.performance.activeListings}</div>
-                    <div className="text-gray-600">Active</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold">{agent.performance.soldProperties}</div>
-                    <div className="text-gray-600">Sold</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold">{agent.performance.averageRating.toFixed(1)}</div>
-                    <div className="text-gray-600">Rating</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setSelectedAgent(agent)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
-                >
-                  View Details
-                </button>
+              <div className="absolute top-2 right-2">
                 <select
-                  value={agent.status}
+                  value={agent.status || 'Active'}
                   onChange={(e) => handleUpdateStatus(agent.id, e.target.value as AgentStatus)}
-                  className="border rounded px-2 py-1 text-sm"
+                  className="text-sm bg-white border border-gray-300 rounded-md shadow-sm px-2 py-1"
                 >
                   <option value="Active">Active</option>
                   <option value="On Leave">On Leave</option>
@@ -251,67 +207,130 @@ export default function AdminAgents() {
                 </select>
               </div>
             </div>
+            <div className="p-4">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{agent.name}</h3>
+                  <p className="text-gray-600">{agent.title || 'Real Estate Agent'}</p>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAgent(agent);
+                      setIsModalOpen(true);
+                    }}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAgent(agent.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center text-gray-600">
+                  <EnvelopeIcon className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{agent.email}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <PhoneIcon className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{agent.phone}</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <DocumentTextIcon className="h-4 w-4 mr-2" />
+                  <span className="text-sm">RERA: {agent.licenseNumber || 'N/A'}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {agent.specializations && agent.specializations.map((spec) => (
+                  <span
+                    key={spec}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                  >
+                    {spec}
+                  </span>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Properties</p>
+                  <p className="font-medium">{agent.properties?.length || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Experience</p>
+                  <p className="font-medium">{agent.experience || 0} years</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Rating</p>
+                  <p className="font-medium">{agent.rating || 0}/5</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Reviews</p>
+                  <p className="font-medium">{agent.reviews || 0}</p>
+                </div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Agent Modal */}
-      <Transition.Root show={isModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={setIsModalOpen}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
+      {/* Add/Edit Agent Modal */}
+      <Transition appear show={isModalOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="fixed inset-0 z-10 overflow-y-auto"
+          onClose={() => setIsModalOpen(false)}
+        >
+          <div className="min-h-screen px-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black opacity-30" />
+            </Transition.Child>
 
-          <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                  <div className="absolute right-0 top-0 pr-4 pt-4">
-                    <button
-                      type="button"
-                      className="rounded-md bg-white text-gray-400 hover:text-gray-500"
-                      onClick={() => setIsModalOpen(false)}
-                    >
-                      <span className="sr-only">Close</span>
-                      <XMarkIcon className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                        {selectedAgent ? 'Agent Details' : 'Create New Agent'}
-                      </Dialog.Title>
-                      <div className="mt-4">
-                        <AgentForm
-                          agent={selectedAgent}
-                          onSubmit={handleCreateAgent}
-                          onCancel={() => setIsModalOpen(false)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
+            <span
+              className="inline-block h-screen align-middle"
+              aria-hidden="true"
+            >
+              &#8203;
+            </span>
+
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <Dialog.Title
+                  as="h3"
+                  className="text-lg font-medium leading-6 text-gray-900 mb-4"
+                >
+                  {selectedAgent ? 'Edit Agent' : 'Add New Agent'}
+                </Dialog.Title>
+                <AgentForm
+                  agent={selectedAgent}
+                  onSubmit={handleFormSubmit}
+                  onCancel={() => setIsModalOpen(false)}
+                />
+              </div>
+            </Transition.Child>
           </div>
         </Dialog>
-      </Transition.Root>
+      </Transition>
     </div>
   );
 } 

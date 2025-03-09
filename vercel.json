@@ -22,5 +22,26 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/", "destination": "/admin.html" },
+    { "source": "/admin/dashboard", "destination": "/admin.html" },
+    { "source": "/admin/dashboard/", "destination": "/admin.html" },
+    { "source": "/admin/properties", "destination": "/admin.html" },
+    { "source": "/admin/properties/", "destination": "/admin.html" },
+    { "source": "/admin/developers", "destination": "/admin.html" },
+    { "source": "/admin/developers/", "destination": "/admin.html" },
+    { "source": "/admin/users", "destination": "/admin.html" },
+    { "source": "/admin/users/", "destination": "/admin.html" },
+    { "source": "/admin/agents", "destination": "/admin.html" },
+    { "source": "/admin/agents/", "destination": "/admin.html" },
+    { "source": "/admin/settings", "destination": "/admin.html" },
+    { "source": "/admin/settings/", "destination": "/admin.html" },
+    { "source": "/admin/login", "destination": "/admin.html" },
+    { "source": "/admin/login/", "destination": "/admin.html" },
+    { "source": "/admin/inquiries", "destination": "/admin.html" },
+    { "source": "/admin/inquiries/", "destination": "/admin.html" },
+    { "source": "/admin/(.*)", "destination": "/admin.html" }
   ]
 } 

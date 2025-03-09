@@ -178,7 +178,7 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
               {/* Map */}
               <div>
                 <h2 className={`${playfair.className} text-2xl font-bold mb-4`}>Location</h2>
-                {isMapLoaded && (
+                {isMapLoaded && property.coordinates && (
                   <Map
                     center={property.coordinates}
                     zoom={15}
@@ -188,8 +188,12 @@ export default function ClientPropertyPage({ property }: ClientPropertyPageProps
                         title: property.title
                       }
                     ]}
-                    address={property.address}
                   />
+                )}
+                {isMapLoaded && !property.coordinates && (
+                  <div className="bg-gray-100 p-4 rounded-lg text-center">
+                    <p>Map location not available for this property.</p>
+                  </div>
                 )}
               </div>
             </div>

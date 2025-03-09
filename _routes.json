@@ -1,5 +1,55 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": []
+  "exclude": [],
+  "routes": [
+    {
+      "src": "^/admin$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/dashboard/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/properties/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/developers/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/users/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/agents/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/settings/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/login/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/inquiries/?$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "^/admin/.*$",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 } 

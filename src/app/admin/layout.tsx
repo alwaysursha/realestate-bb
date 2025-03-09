@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext';
 
@@ -23,12 +23,40 @@ export default function AdminLayout({
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAdminAuth();
 
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // Handle redirection based on authentication state
+  useEffect(() => {
+    if (!isLoading) {
+      // If at the root admin path, redirect to login or dashboard
+      if (pathname === '/admin' || pathname === '/admin/') {
+        if (isAuthenticated) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/admin/login');
+        }
+        return;
+      }
+
+      // If not authenticated and not on login page, redirect to login
+      if (!isAuthenticated && pathname && !pathname.includes('/admin/login')) {
+        router.push('/admin/login');
+        return;
+      }
+
+      // If authenticated and on login page, redirect to dashboard
+      if (isAuthenticated && pathname && pathname.includes('/admin/login')) {
+        router.push('/admin/dashboard');
+        return;
+      }
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
 
   // If still loading authentication state, show loading spinner
   if (isLoading) {

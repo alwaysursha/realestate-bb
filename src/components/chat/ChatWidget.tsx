@@ -73,20 +73,20 @@ export default function ChatWidget() {
       <div className="relative">
         {/* Popup Message */}
         {!isOpen && showPopup && (
-          <div className="absolute bottom-full right-0 mb-2 bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg border border-gray-200 whitespace-nowrap animate-fade-in-up">
+          <div className="absolute bottom-full right-0 mb-4 bg-gradient-to-r from-yellow-200 to-yellow-300 text-yellow-700 px-4 py-2.5 rounded-2xl shadow-lg border border-yellow-200 whitespace-nowrap animate-bounce-gentle transform transition-all duration-300 hover:scale-105 max-w-[200px]">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              <p className="text-sm font-medium animate-nudge inline-block">Have Questions? Let us Assist you!</p>
+              <p className="text-sm font-semibold animate-nudge inline-block tracking-wide">✨ Let's Talk! ✨</p>
               <button 
                 onClick={dismissPopup}
-                className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="ml-1 text-yellow-600/80 hover:text-yellow-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-white border-r border-b border-gray-200"></div>
+            <div className="absolute bottom-0 right-6 transform translate-y-1/2 rotate-45 w-2 h-2 bg-yellow-300 border-r border-b border-yellow-200"></div>
           </div>
         )}
 

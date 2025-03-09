@@ -1,6 +1,8 @@
 import React from 'react';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getPropertyById, featuredProperties } from '../../../data/properties';
+import { getPropertyById } from '@/services/propertiesService';
+import { featuredProperties } from '@/data/properties';
 import ClientPropertyPage from './client-page';
 
 interface PropertyPageProps {
@@ -9,15 +11,37 @@ interface PropertyPageProps {
   };
 }
 
-// This function generates all possible property IDs at build time
+export const dynamic = 'force-static';
+export const dynamicParams = true;
+export const revalidate = 3600; // Revalidate every hour
+
+// Generate static params for featured properties
 export async function generateStaticParams() {
-  return featuredProperties.map((property) => ({
-    id: property.id.toString(),
-  }));
+  return featuredProperties
+    .filter(property => property.id !== undefined)
+    .map((property) => ({
+      id: property.id!.toString(),
+    }));
 }
 
-export default function PropertyPage({ params }: PropertyPageProps) {
-  const property = getPropertyById(params.id);
+export async function generateMetadata({ params }: PropertyPageProps): Promise<Metadata> {
+  const property = await getPropertyById(params.id);
+  
+  if (!property) {
+    return {
+      title: 'Property Not Found',
+      description: 'The requested property could not be found.'
+    };
+  }
+  
+  return {
+    title: property.title,
+    description: property.description
+  };
+}
+
+export default async function PropertyPage({ params }: PropertyPageProps) {
+  const property = await getPropertyById(params.id);
 
   if (!property) {
     notFound();

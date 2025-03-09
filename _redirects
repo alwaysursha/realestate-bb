@@ -1,6 +1,27 @@
 # Redirects and rewrites for Cloudflare Pages
 
-# Redirect all routes to index.html
+# Handle admin routes specifically - all admin routes should use admin.html
+/admin                  /admin.html   200
+/admin/                 /admin.html   200
+/admin/dashboard        /admin.html   200
+/admin/dashboard/       /admin.html   200
+/admin/properties       /admin.html   200
+/admin/properties/      /admin.html   200
+/admin/developers       /admin.html   200
+/admin/developers/      /admin.html   200
+/admin/users            /admin.html   200
+/admin/users/           /admin.html   200
+/admin/agents           /admin.html   200
+/admin/agents/          /admin.html   200
+/admin/settings         /admin.html   200
+/admin/settings/        /admin.html   200
+/admin/login            /admin.html   200
+/admin/login/           /admin.html   200
+/admin/inquiries        /admin.html   200
+/admin/inquiries/       /admin.html   200
+/admin/*                /admin.html   200
+
+# Redirect all other routes to index.html
 /*    /index.html   200
 
 # Handle static files

@@ -246,13 +246,17 @@ export const allProperties: Property[] = [...featuredProperties];
 // Helper function to get properties by category
 export const getPropertiesByCategory = (category: string): Property[] => {
   return allProperties.filter(property => 
-    property.type.toLowerCase() === category.toLowerCase()
+    property.type?.toLowerCase() === category.toLowerCase() ||
+    property.propertyType?.toLowerCase() === category.toLowerCase() ||
+    property.category?.toLowerCase() === category.toLowerCase()
   );
 };
 
 // Helper function to get a property by ID
 export const getPropertyById = (id: string | number): Property | undefined => {
-  return allProperties.find(property => property.id.toString() === id.toString());
+  return allProperties.find(property => 
+    property.id !== undefined && property.id.toString() === id.toString()
+  );
 };
 
 // Helper function to get properties by status

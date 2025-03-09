@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { toast } from 'react-hot-toast';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted with:', { email, password });
+    console.log('Form submitted with:', { email });
     setError('');
     setIsLoading(true);
 
@@ -40,14 +41,13 @@ export default function AdminLogin() {
     try {
       console.log('Calling login function from context');
       await login(email, password);
-      console.log('Login function completed successfully');
+      console.log('Login successful');
+      toast.success('Login successful');
       
-      // Add direct navigation to dashboard
-      console.log('Manually navigating to dashboard');
-      window.location.href = '/admin/dashboard/';
-    } catch (err) {
+      // The AdminAuthContext will handle redirection
+    } catch (err: any) {
       console.error('Login error caught in handleSubmit:', err);
-      setError('Invalid email or password');
+      setError(err.message || 'Invalid email or password');
     } finally {
       console.log('Setting loading state to false');
       setIsLoading(false);
@@ -114,7 +114,7 @@ export default function AdminLogin() {
           </div>
           
           <div className="text-center text-sm text-gray-500 mt-4">
-            <p>For demo: use admin@builderbookings.com / admin123</p>
+            <p>Use your admin credentials to sign in</p>
           </div>
         </form>
       </div>

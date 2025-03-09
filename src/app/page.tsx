@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { featuredProperties, getPropertiesByCategory } from '../data/properties'
 import { Property } from '../types/property'
 import InquiryModal from '@/components/properties/InquiryModal'
+import PropertyCard from '@/components/properties/PropertyCard'
 
 export default function Home() {
   const [favorites, setFavorites] = useState<(number|string)[]>([]);
@@ -211,81 +212,16 @@ export default function Home() {
               }}
               className="!px-0 w-full"
             >
-            {apartmentProperties.map((property) => (
+              {apartmentProperties.map((property) => (
                 <SwiperSlide key={property.id} className="h-auto">
-                  <Link href={`/property/${property.id}`} className="block h-full w-full">
-                    <div className="bg-white rounded-lg shadow-md overflow-hidden h-full property-card">
-                      <div className="relative pb-[66.666667%]">
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md">
-                          {property.type}
-                        </span>
-                        <span className={`absolute top-4 right-4 text-white px-3 py-1 rounded-md ${
-                          property.status === 'Now Selling'
-                            ? 'bg-green-600' 
-                            : property.status === 'Coming Soon'
-                              ? 'bg-yellow-500' 
-                              : property.status === 'Sold Out'
-                                ? 'bg-red-600'
-                                : 'bg-green-600'
-                        }`}>
-                          {property.status}
-                        </span>
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="text-lg font-semibold mb-1 line-clamp-1">{property.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-1">{property.location}</p>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xl font-bold text-blue-600">AED {property.price.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                          <span>{property.beds} Beds</span>
-                          <span>•</span>
-                          <span>{property.baths} Baths</span>
-                          <span>•</span>
-                          <span>{property.area.toLocaleString()} sqft</span>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between pt-2 border-t border-gray-100 mt-4">
-                          <div className="text-xs text-gray-600">
-                            <span className="font-medium">Developer:</span> {property.developer}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={(e) => handleEmailInquiry(property, e)}
-                              className="text-gray-500 hover:text-blue-600 transition-colors"
-                              aria-label="Email inquiry"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                              </svg>
-                            </button>
-                            <button 
-                              onClick={(e) => handleShare(property, e)}
-                              className="text-gray-500 hover:text-blue-600 transition-colors"
-                              aria-label="Share property"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                              </svg>
-                            </button>
-                            <button 
-                              onClick={(e) => toggleFavorite(property.id, e)}
-                              className={`${favorites.includes(property.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'} transition-colors`}
-                              aria-label="Save to favorites"
-                            >
-                              <svg className="w-4 h-4" fill={favorites.includes(property.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <div className="h-full w-full">
+                    <PropertyCard 
+                      property={property} 
+                      isFavorite={property.id ? favorites.includes(property.id) : false}
+                      onToggleFavorite={toggleFavorite}
+                      onShare={handleShare}
+                    />
+                  </div>
                 </SwiperSlide>
               ))}
             </Swiper>
@@ -302,21 +238,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Houses Section */}
+      {/* Villas Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="mb-12">
             <div className="flex items-center justify-between">
-            <div>
+              <div>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">Villas <span className="text-yellow-500">•</span> Townhouses</h2>
-                <p className="text-gray-600 max-w-2xl">Discover our exclusive collection of luxury villas and townhouses</p>
-            </div>
+                <p className="text-gray-600 max-w-2xl">Discover luxury family homes with private gardens and premium amenities</p>
+              </div>
               <Link href="/properties/villas-townhouses" className="hidden md:inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-300">
                 View All Villas
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
+                </svg>
+              </Link>
             </div>
           </div>
           <div className="relative mx-auto w-full">
@@ -346,81 +282,16 @@ export default function Home() {
               }}
               className="!px-0 w-full"
             >
-            {villaProperties.map((property) => (
+              {villaProperties.map((property) => (
                 <SwiperSlide key={property.id} className="h-auto">
-                  <Link href={`/property/${property.id}`} className="block h-full w-full">
-                    <div className="bg-white rounded-lg shadow-md overflow-hidden h-full property-card border border-gray-200">
-                      <div className="relative pb-[66.666667%]">
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md">
-                          {property.type}
-                        </span>
-                        <span className={`absolute top-4 right-4 text-white px-3 py-1 rounded-md ${
-                          property.status === 'Now Selling'
-                            ? 'bg-green-600' 
-                            : property.status === 'Coming Soon'
-                              ? 'bg-yellow-500' 
-                              : property.status === 'Sold Out'
-                                ? 'bg-red-600'
-                                : 'bg-green-600'
-                        }`}>
-                          {property.status}
-                        </span>
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="text-lg font-semibold mb-1 line-clamp-1">{property.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-1">{property.location}</p>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xl font-bold text-blue-600">AED {property.price.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                          <span>{property.beds} Beds</span>
-                          <span>•</span>
-                          <span>{property.baths} Baths</span>
-                          <span>•</span>
-                          <span>{property.area.toLocaleString()} sqft</span>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between pt-2 border-t border-gray-100 mt-4">
-                          <div className="text-xs text-gray-600">
-                            <span className="font-medium">Developer:</span> {property.developer}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={(e) => handleEmailInquiry(property, e)}
-                              className="text-gray-500 hover:text-blue-600 transition-colors"
-                              aria-label="Email inquiry"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                              </svg>
-                            </button>
-                            <button 
-                              onClick={(e) => handleShare(property, e)}
-                              className="text-gray-500 hover:text-blue-600 transition-colors"
-                              aria-label="Share property"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                              </svg>
-                            </button>
-                            <button 
-                              onClick={(e) => toggleFavorite(property.id, e)}
-                              className={`${favorites.includes(property.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'} transition-colors`}
-                              aria-label="Save to favorites"
-                            >
-                              <svg className="w-4 h-4" fill={favorites.includes(property.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <div className="h-full w-full">
+                    <PropertyCard 
+                      property={property} 
+                      isFavorite={property.id ? favorites.includes(property.id) : false}
+                      onToggleFavorite={toggleFavorite}
+                      onShare={handleShare}
+                    />
+                  </div>
                 </SwiperSlide>
               ))}
             </Swiper>

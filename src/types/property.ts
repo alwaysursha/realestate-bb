@@ -1,26 +1,28 @@
 export interface Property {
-  id: number | string;
+  id?: string | number;
   title: string;
-  location: string;
-  city: 'Dubai' | 'Sharjah' | 'Ajman' | 'RAK' | 'UAQ';
-  price: number;
-  beds: number;
-  baths: number;
-  area: number;
-  type: string;
-  status: string;
-  developer: string;
   description: string;
-  images: string[];
-  amenities?: string[];
+  price: number;
+  location: string;
+  city?: string;
+  address?: string;
+  bedrooms?: number;
+  beds?: number;
+  bathrooms?: number;
+  baths?: number;
+  area: number;
+  propertyType?: string;
+  type?: string;
+  status: string;
   features?: string[];
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  category: 'Villa' | 'Semi' | 'Townhouse' | 'Apartment' | 'Penthouse';
-  isFeatured: boolean;
+  amenities?: string[];
+  images: string[];
   image?: string;
+  developerId?: string;
+  developerName?: string;
+  developer?: string;
+  agentId?: string;
+  agentName?: string;
   agent?: {
     name: string;
     role: string;
@@ -28,7 +30,17 @@ export interface Property {
     email: string;
     image: string;
   };
-  address?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  lastViewed?: Date;
+  featured?: boolean;
+  isFeatured?: boolean;
+  slug?: string;
+  category?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
   yearBuilt?: number;
-  createdAt: Date;
+  viewCount?: number;
 } 

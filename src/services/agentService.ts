@@ -1,84 +1,131 @@
-import { Agent, AgentCreateInput, AgentUpdateInput, AgentStatus, AgentPerformance } from '@/types/agent';
-import { userService } from './userService';
+import { Agent } from '@/types/agent';
+import { initialAgents } from '@/data/agents';
+
+const AGENTS_STORAGE_KEY = 'real_estate_agents';
+
+// Mock interfaces to match the expected interface in the admin page
+export interface AgentCreateInput {
+  name: string;
+  email: string;
+  phone: string;
+  bio: string;
+  title: string;
+  licenseNumber: string;
+  licenseExpiry: Date;
+  specializations: string[];
+  languages: string[];
+  experience: number;
+  userId?: string;
+}
+
+export interface AgentUpdateInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  title?: string;
+  licenseNumber?: string;
+  licenseExpiry?: Date;
+  specializations?: string[];
+  languages?: string[];
+  experience?: number;
+  status?: string;
+}
+
+export type AgentStatus = 'Active' | 'On Leave' | 'Inactive';
+export type AgentSpecialization = 'Luxury' | 'Commercial' | 'Residential' | 'Off-Plan' | 'International';
 
 class AgentService {
-  private agents: Agent[] = [];
+  private getAgentsFromStorage(): Agent[] {
+    if (typeof window === 'undefined') return initialAgents;
+    
+    const stored = localStorage.getItem(AGENTS_STORAGE_KEY);
+    if (!stored) {
+      this.saveAgentsToStorage(initialAgents);
+      return initialAgents;
+    }
+    
+    return JSON.parse(stored);
+  }
+  
+  private saveAgentsToStorage(agents: Agent[]): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
+  }
 
   async getAgents(): Promise<Agent[]> {
-    return this.agents;
+    return this.getAgentsFromStorage();
   }
 
   async getAgentById(id: string): Promise<Agent | null> {
-    return this.agents.find(agent => agent.id === id) || null;
+    const agents = this.getAgentsFromStorage();
+    return agents.find(agent => agent.id === id) || null;
   }
 
   async getAgentByUserId(userId: string): Promise<Agent | null> {
-    return this.agents.find(agent => agent.userId === userId) || null;
+    const agents = this.getAgentsFromStorage();
+    return agents.find(agent => agent.userId === userId) || null;
   }
 
   async createAgent(input: AgentCreateInput): Promise<Agent> {
-    // Verify user exists and has agent role
-    const user = await userService.getUserById(input.userId);
-    if (!user) throw new Error('User not found');
-    if (user.role !== 'Agent') throw new Error('User must have Agent role');
-
+    const agents = this.getAgentsFromStorage();
+    
+    // Convert the input to match our Agent interface
     const newAgent: Agent = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...input,
-      status: 'Active',
-      certifications: [],
-      performance: {
-        totalListings: 0,
-        activeListings: 0,
-        soldProperties: 0,
-        totalSalesValue: 0,
-        averageRating: 0,
-        responseTime: 0,
-        successRate: 0,
-        monthlyStats: []
-      },
-      socialMedia: {},
-      portfolio: {
-        featuredListings: [],
-        pastTransactions: [],
-        specialAchievements: []
-      },
-      assignedProperties: [],
-      schedule: {
-        availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        availableHours: {
-          start: '09:00',
-          end: '18:00'
-        }
-      },
-      documents: [],
+      id: Math.random().toString(36).substring(2, 15),
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      bio: input.bio,
+      specialization: input.specializations,
+      active: true,
+      status: 'Active' as AgentStatus,
+      specializations: input.specializations,
+      title: input.title,
+      licenseNumber: input.licenseNumber,
+      licenseExpiry: input.licenseExpiry,
+      languages: input.languages,
+      experience: input.experience,
+      userId: input.userId,
       createdAt: new Date(),
       updatedAt: new Date()
     };
-
-    this.agents.push(newAgent);
+    
+    agents.push(newAgent);
+    this.saveAgentsToStorage(agents);
     return newAgent;
   }
 
   async updateAgent(id: string, input: AgentUpdateInput): Promise<Agent | null> {
-    const index = this.agents.findIndex(agent => agent.id === id);
+    const agents = this.getAgentsFromStorage();
+    const index = agents.findIndex(a => a.id === id);
+    
     if (index === -1) return null;
-
-    const updatedAgent = {
-      ...this.agents[index],
+    
+    // Update the agent with the input
+    const updatedAgent: Agent = {
+      ...agents[index],
       ...input,
+      // Map specializations to specialization if provided
+      specialization: input.specializations || agents[index].specialization,
+      // Ensure status is of type AgentStatus
+      status: input.status as AgentStatus || agents[index].status,
       updatedAt: new Date()
     };
-
-    this.agents[index] = updatedAgent;
+    
+    agents[index] = updatedAgent;
+    this.saveAgentsToStorage(agents);
     return updatedAgent;
   }
 
   async deleteAgent(id: string): Promise<boolean> {
-    const index = this.agents.findIndex(agent => agent.id === id);
+    const agents = this.getAgentsFromStorage();
+    const index = agents.findIndex(a => a.id === id);
+    
     if (index === -1) return false;
-
-    this.agents.splice(index, 1);
+    
+    agents.splice(index, 1);
+    this.saveAgentsToStorage(agents);
     return true;
   }
 
@@ -89,104 +136,41 @@ class AgentService {
   async assignPropertyToAgent(agentId: string, propertyId: string): Promise<Agent | null> {
     const agent = await this.getAgentById(agentId);
     if (!agent) return null;
-
-    if (!agent.assignedProperties.includes(propertyId)) {
-      agent.assignedProperties.push(propertyId);
-      agent.performance.activeListings += 1;
-      agent.performance.totalListings += 1;
-      agent.updatedAt = new Date();
+    
+    const properties = agent.properties || [];
+    if (!properties.includes(propertyId)) {
+      properties.push(propertyId);
+      return this.updateAgent(agentId, { properties } as any);
     }
-
+    
     return agent;
   }
 
   async removePropertyFromAgent(agentId: string, propertyId: string): Promise<Agent | null> {
     const agent = await this.getAgentById(agentId);
     if (!agent) return null;
-
-    agent.assignedProperties = agent.assignedProperties.filter(id => id !== propertyId);
-    agent.performance.activeListings = Math.max(0, agent.performance.activeListings - 1);
-    agent.updatedAt = new Date();
-
-    return agent;
+    
+    const properties = (agent.properties || []).filter(id => id !== propertyId);
+    return this.updateAgent(agentId, { properties } as any);
   }
 
-  async addCertification(agentId: string, certification: Agent['certifications'][0]): Promise<Agent | null> {
+  async addCertification(agentId: string, certification: string): Promise<Agent | null> {
     const agent = await this.getAgentById(agentId);
     if (!agent) return null;
-
-    agent.certifications.push(certification);
-    agent.updatedAt = new Date();
-
-    return agent;
-  }
-
-  async updatePerformance(agentId: string, performance: Partial<AgentPerformance>): Promise<Agent | null> {
-    const agent = await this.getAgentById(agentId);
-    if (!agent) return null;
-
-    agent.performance = {
-      ...agent.performance,
-      ...performance
-    };
-    agent.updatedAt = new Date();
-
-    return agent;
-  }
-
-  async addDocument(agentId: string, document: Agent['documents'][0]): Promise<Agent | null> {
-    const agent = await this.getAgentById(agentId);
-    if (!agent) return null;
-
-    agent.documents.push(document);
-    agent.updatedAt = new Date();
-
-    return agent;
-  }
-
-  async updateSchedule(agentId: string, schedule: Partial<Agent['schedule']>): Promise<Agent | null> {
-    const agent = await this.getAgentById(agentId);
-    if (!agent) return null;
-
-    agent.schedule = {
-      ...agent.schedule,
-      ...schedule
-    };
-    agent.updatedAt = new Date();
-
-    return agent;
-  }
-
-  async addTransaction(agentId: string, transaction: Agent['portfolio']['pastTransactions'][0]): Promise<Agent | null> {
-    const agent = await this.getAgentById(agentId);
-    if (!agent) return null;
-
-    agent.portfolio.pastTransactions.push(transaction);
-    agent.performance.soldProperties += 1;
-    agent.performance.totalSalesValue += transaction.value;
-    agent.updatedAt = new Date();
-
-    // Update monthly stats
-    const month = transaction.transactionDate.toISOString().slice(0, 7); // YYYY-MM
-    const monthStats = agent.performance.monthlyStats.find(stat => stat.month === month);
-    if (monthStats) {
-      monthStats.salesCount += 1;
-      monthStats.salesValue += transaction.value;
-    } else {
-      agent.performance.monthlyStats.push({
-        month,
-        salesCount: 1,
-        salesValue: transaction.value,
-        newListings: 0
-      });
+    
+    const specialization = [...(agent.specialization || [])];
+    if (!specialization.includes(certification)) {
+      specialization.push(certification);
+      return this.updateAgent(agentId, { specialization } as any);
     }
-
+    
     return agent;
   }
 
   async getTopPerformers(limit: number = 5): Promise<Agent[]> {
-    return [...this.agents]
-      .sort((a, b) => b.performance.totalSalesValue - a.performance.totalSalesValue)
+    const agents = this.getAgentsFromStorage();
+    return [...agents]
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
       .slice(0, limit);
   }
 }

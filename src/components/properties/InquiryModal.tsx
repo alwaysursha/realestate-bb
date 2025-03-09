@@ -27,13 +27,13 @@ export default function InquiryModal({ isOpen, onClose, property }: InquiryModal
 
     try {
       await inquiryService.createInquiry({
-        propertyId: property.id.toString(),
+        propertyId: property.id ? property.id.toString() : '',
         propertySnapshot: {
-          id: property.id.toString(),
+          id: property.id ? property.id.toString() : '',
           title: property.title,
-          price: property.price,
           location: property.location,
-          mainImage: property.image || property.images[0] || ''
+          price: property.price,
+          mainImage: property.image || property.images[0] || '',
         },
         ...formData
       });

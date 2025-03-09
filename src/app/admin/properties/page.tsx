@@ -19,29 +19,23 @@ export default function AdminProperties() {
   const [currentProperty, setCurrentProperty] = useState<Property | null>(null);
   const [newProperty, setNewProperty] = useState<Omit<Property, 'id'>>({
     title: '',
-    location: '',
-    city: 'Dubai',
-    price: 0,
-    beds: 0,
-    baths: 0,
-    area: 0,
-    type: '',
-    status: '',
-    developer: '',
     description: '',
+    price: 0,
+    location: 'Dubai',
+    bedrooms: 0,
+    bathrooms: 0,
+    area: 0,
+    propertyType: 'Apartment',
+    status: 'For Sale',
+    features: [],
     images: [],
-    image: '',
-    coordinates: { lat: 25.2048, lng: 55.2708 },
-    category: 'Apartment',
-    isFeatured: false,
+    developerId: '',
+    developerName: '',
+    agentId: '',
+    agentName: '',
+    featured: false,
     createdAt: new Date(),
-    agent: {
-      name: '',
-      role: '',
-      phone: '',
-      email: '',
-      image: ''
-    }
+    updatedAt: new Date()
   });
   
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
@@ -89,7 +83,9 @@ export default function AdminProperties() {
                            property.location.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Type filter
-      const matchesType = filterType === 'All' || property.type === filterType;
+      const matchesType = filterType === 'All' || 
+                         (property.type && property.type === filterType) || 
+                         (property.propertyType && property.propertyType === filterType);
       
       // Status filter
       const matchesStatus = filterStatus === 'All' || property.status === filterStatus;
@@ -209,18 +205,17 @@ export default function AdminProperties() {
         }
       };
       
-      const updatedProperty = await propertiesService.updateProperty(currentProperty.id, propertyToUpdate);
-      
-      if (updatedProperty) {
-        const updatedProperties = properties.map(property => 
-          property.id === currentProperty.id ? updatedProperty : property
-        );
+      if (currentProperty && currentProperty.id) {
+        const updatedProperty = await propertiesService.updateProperty(currentProperty.id, propertyToUpdate);
         
-        setProperties(updatedProperties);
+        if (updatedProperty) {
+          const updatedProperties = properties.map(property => 
+            property.id === currentProperty.id ? updatedProperty : property
+          );
+          setProperties(updatedProperties);
+          setIsEditModalOpen(false);
+        }
       }
-      
-      setIsEditModalOpen(false);
-      setCurrentProperty(null);
     } catch (error) {
       console.error('Error updating property:', error);
       alert('Failed to update property. Please try again.');
@@ -228,19 +223,17 @@ export default function AdminProperties() {
   };
 
   // Handle deleting a property
-  const handleDeleteProperty = async (id: number | string) => {
+  const handleDeleteProperty = async (id: number | string | undefined) => {
+    if (!id) return;
+    
     if (confirm('Are you sure you want to delete this property?')) {
       try {
         const success = await propertiesService.deleteProperty(id);
-        
         if (success) {
           setProperties(properties.filter(property => property.id !== id));
-        } else {
-          alert('Property not found.');
         }
       } catch (error) {
         console.error('Error deleting property:', error);
-        alert('Failed to delete property. Please try again.');
       }
     }
   };
