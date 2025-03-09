@@ -1,0 +1,27 @@
+QUICK PROJECT RESTORE COMMANDS
+==============================
+
+1. Navigate to project:
+   cd /Users/ali/Desktop/real-estate-project-backup-20250304_023209
+
+2. Install dependencies (if needed):
+   npm install
+
+3. Start development server:
+   npm run dev
+
+4. Access preview page:
+   http://localhost:3000/property-preview/1
+
+5. Build for production:
+   npm run build
+
+6. Start production server:
+   npm run start
+
+7. Return to this commit point (if needed):
+   git checkout b85e6a1
+
+Key files:
+- src/app/property-preview/[id]/page.tsx
+- src/app/property-preview/[id]/preview-client-page.tsx 

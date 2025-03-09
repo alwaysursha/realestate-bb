@@ -52,19 +52,14 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
       <div className="relative h-[600px] w-full">
         {/* Cover Image */}
         <div className="absolute inset-0 z-0">
-          {property.images && property.images.length > 0 ? (
-            <Image 
-              src={property.images[0]} 
-              alt={property.title} 
-              fill 
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-              <p className="text-gray-600">Project Cover Photo Will Appear Here</p>
-            </div>
-          )}
+          {/* Using the property-temp.jpg image instead of property images */}
+          <Image 
+            src="/images/property-temp.jpg" 
+            alt={property.title} 
+            fill 
+            className="object-cover"
+            priority
+          />
         </div>
         
         {/* Register Form Overlay */}
