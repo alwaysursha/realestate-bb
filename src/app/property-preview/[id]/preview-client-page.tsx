@@ -110,9 +110,6 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Language <span className="text-red-500">*</span>
-              </label>
               <select 
                 value={language} 
                 onChange={(e) => {
@@ -124,7 +121,7 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                 className={`w-full px-3 py-2 border ${formErrors.language ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                 required
               >
-                <option value="" disabled>Select language</option>
+                <option value="" disabled>Preferred Language</option>
                 <option value="English">English</option>
                 <option value="Arabic">Arabic</option>
                 <option value="Russian">Russian</option>
@@ -332,14 +329,11 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Preferred Language <span className="text-red-500">*</span>
-                  </label>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     required
                   >
-                    <option value="" disabled selected>Select language</option>
+                    <option value="" disabled selected>Preferred Language</option>
                     <option value="English">English</option>
                     <option value="Arabic">Arabic</option>
                     <option value="Russian">Russian</option>
@@ -385,14 +379,11 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Preferred Language <span className="text-red-500">*</span>
-                  </label>
                   <select 
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     required
                   >
-                    <option value="" disabled selected>Select language</option>
+                    <option value="" disabled selected>Preferred Language</option>
                     <option value="English">English</option>
                     <option value="Arabic">Arabic</option>
                     <option value="Russian">Russian</option>
@@ -448,14 +439,11 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                 ></textarea>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Preferred Language <span className="text-red-500">*</span>
-                </label>
                 <select 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   required
                 >
-                  <option value="" disabled selected>Select language</option>
+                  <option value="" disabled selected>Preferred Language</option>
                   <option value="English">English</option>
                   <option value="Arabic">Arabic</option>
                   <option value="Russian">Russian</option>
