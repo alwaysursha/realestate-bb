@@ -11,7 +11,8 @@ interface PreviewClientPageProps {
 
 export default function PreviewClientPage({ property }: PreviewClientPageProps) {
   const [activeTab, setActiveTab] = useState('details');
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState('');
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   
   // Mock data for the property (similar to Lazord)
   const mockData = {
@@ -46,6 +47,27 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
     }
   };
   
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    const errors: {[key: string]: string} = {};
+    if (!language) {
+      errors.language = 'Please select your preferred language';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    // Form is valid, proceed with submission
+    console.log('Form submitted with language:', language);
+    // Reset errors
+    setFormErrors({});
+    // Here you would typically submit the form data to your backend
+  };
+  
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section with Cover Photo and Register Form */}
@@ -65,7 +87,7 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
         {/* Register Form Overlay */}
         <div className="absolute top-1/2 right-12 transform -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl w-80 z-10">
           <h3 className="text-xl font-bold mb-4">Register Your Interest</h3>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <input 
                 type="text" 
@@ -88,21 +110,38 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Preferred Language <span className="text-red-500">*</span>
+              </label>
               <select 
                 value={language} 
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                onChange={(e) => {
+                  setLanguage(e.target.value);
+                  if (formErrors.language) {
+                    setFormErrors({...formErrors, language: ''});
+                  }
+                }}
+                className={`w-full px-3 py-2 border ${formErrors.language ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+                required
               >
+                <option value="" disabled>Select language</option>
                 <option value="English">English</option>
                 <option value="Arabic">Arabic</option>
                 <option value="Russian">Russian</option>
                 <option value="Chinese">Chinese</option>
                 <option value="Hindi">Hindi</option>
                 <option value="Urdu">Urdu</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="Persian">Persian</option>
+                <option value="Portuguese">Portuguese</option>
               </select>
+              {formErrors.language && (
+                <p className="mt-1 text-sm text-red-500">{formErrors.language}</p>
+              )}
             </div>
             <button 
-              type="button" 
+              type="submit" 
               className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
             >
               Submit
@@ -292,6 +331,27 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred Language <span className="text-red-500">*</span>
+                  </label>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="" disabled selected>Select language</option>
+                    <option value="English">English</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Russian">Russian</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Urdu">Urdu</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="Persian">Persian</option>
+                    <option value="Portuguese">Portuguese</option>
+                  </select>
+                </div>
                 <button 
                   type="button" 
                   className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -323,6 +383,27 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                     placeholder="Phone" 
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Preferred Language <span className="text-red-500">*</span>
+                  </label>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="" disabled selected>Select language</option>
+                    <option value="English">English</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Russian">Russian</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Urdu">Urdu</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="Persian">Persian</option>
+                    <option value="Portuguese">Portuguese</option>
+                  </select>
                 </div>
                 <button 
                   type="button" 
@@ -367,17 +448,24 @@ export default function PreviewClientPage({ property }: PreviewClientPageProps) 
                 ></textarea>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Language <span className="text-red-500">*</span>
+                </label>
                 <select 
-                  value={language} 
-                  onChange={(e) => setLanguage(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
                 >
+                  <option value="" disabled selected>Select language</option>
                   <option value="English">English</option>
                   <option value="Arabic">Arabic</option>
                   <option value="Russian">Russian</option>
                   <option value="Chinese">Chinese</option>
                   <option value="Hindi">Hindi</option>
                   <option value="Urdu">Urdu</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="Persian">Persian</option>
+                  <option value="Portuguese">Portuguese</option>
                 </select>
               </div>
               <button 
