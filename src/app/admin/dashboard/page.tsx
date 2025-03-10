@@ -12,59 +12,108 @@ import { userService } from '@/services/userService';
 import { inquiryService } from '@/services/inquiryService';
 import { reportService } from '@/services/reportService';
 
+interface StatsData {
+  total: number;
+  monthlyChange: number;
+  isPositive: boolean;
+}
+
+interface ViewsData extends StatsData {
+  change: number;
+}
+
+interface StatsState {
+  properties: {
+    isLoading: boolean;
+    data: StatsData | null;
+    error: string | null;
+  };
+  users: {
+    isLoading: boolean;
+    data: StatsData | null;
+    error: string | null;
+  };
+  inquiries: {
+    isLoading: boolean;
+    data: StatsData | null;
+    error: string | null;
+  };
+  views: {
+    isLoading: boolean;
+    data: ViewsData | null;
+    error: string | null;
+  };
+}
+
 export default function AdminDashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const router = useRouter();
-  const [totalProperties, setTotalProperties] = useState<number>(0);
-  const [monthlyChange, setMonthlyChange] = useState<number>(0);
-  const [isPositiveChange, setIsPositiveChange] = useState<boolean>(true);
-  const [isLoadingProperties, setIsLoadingProperties] = useState<boolean>(true);
-  const [activeUsers, setActiveUsers] = useState<number>(0);
-  const [userChange, setUserChange] = useState<number>(0);
-  const [isPositiveUserChange, setIsPositiveUserChange] = useState<boolean>(true);
-  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(true);
-  const [totalInquiries, setTotalInquiries] = useState<number>(0);
-  const [inquiryChange, setInquiryChange] = useState<number>(0);
-  const [isPositiveInquiryChange, setIsPositiveInquiryChange] = useState<boolean>(true);
-  const [isLoadingInquiries, setIsLoadingInquiries] = useState<boolean>(true);
-  const [totalViews, setTotalViews] = useState<number>(0);
-  const [viewsChange, setViewsChange] = useState<number>(0);
-  const [isViewsChangePositive, setIsViewsChangePositive] = useState<boolean>(true);
-  const [isLoadingViews, setIsLoadingViews] = useState<boolean>(true);
-  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
+  const [stats, setStats] = useState<StatsState>({
+    properties: { isLoading: true, data: null, error: null },
+    users: { isLoading: true, data: null, error: null },
+    inquiries: { isLoading: true, data: null, error: null },
+    views: { isLoading: true, data: null, error: null }
+  });
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Fetch stats when component mounts and is authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       const fetchStats = async () => {
         try {
+          // Fetch property stats
+          setStats(prev => ({
+            ...prev,
+            properties: { ...prev.properties, isLoading: true, error: null }
+          }));
           const propertyStats = await getPropertyStats();
-          setTotalProperties(propertyStats.total);
-          setMonthlyChange(propertyStats.monthlyChange);
-          setIsPositiveChange(propertyStats.isPositive);
-          
-          if (propertyStats.totalViews !== undefined) {
-            setTotalViews(propertyStats.totalViews);
-            setViewsChange(propertyStats.viewsChange || 0);
-            setIsViewsChangePositive(propertyStats.isViewsChangePositive || true);
-            setIsLoadingViews(false);
-          }
+          setStats(prev => ({
+            ...prev,
+            properties: { isLoading: false, data: propertyStats, error: null },
+            views: { 
+              isLoading: false, 
+              data: {
+                total: propertyStats.totalViews || 0,
+                monthlyChange: propertyStats.monthlyChange,
+                isPositive: propertyStats.isPositive,
+                change: propertyStats.viewsChange || 0
+              }, 
+              error: null 
+            }
+          }));
 
+          // Fetch user stats
+          setStats(prev => ({
+            ...prev,
+            users: { ...prev.users, isLoading: true, error: null }
+          }));
           const userStats = await userService.getUserStats();
-          setActiveUsers(userStats.total);
-          setUserChange(userStats.monthlyChange);
-          setIsPositiveUserChange(userStats.isPositive);
+          setStats(prev => ({
+            ...prev,
+            users: { isLoading: false, data: userStats, error: null }
+          }));
 
+          // Fetch inquiry stats
+          setStats(prev => ({
+            ...prev,
+            inquiries: { ...prev.inquiries, isLoading: true, error: null }
+          }));
           const inquiryStats = await inquiryService.getInquiryStats();
-          setTotalInquiries(inquiryStats.total);
-          setInquiryChange(inquiryStats.monthlyChange);
-          setIsPositiveInquiryChange(inquiryStats.isPositive);
+          setStats(prev => ({
+            ...prev,
+            inquiries: { isLoading: false, data: inquiryStats, error: null }
+          }));
+
         } catch (error) {
           console.error('Failed to fetch stats:', error);
-        } finally {
-          setIsLoadingProperties(false);
-          setIsLoadingUsers(false);
-          setIsLoadingInquiries(false);
+          const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+          // Update error state for the failed section
+          setStats(prev => ({
+            ...prev,
+            properties: { ...prev.properties, isLoading: false, error: errorMessage },
+            users: { ...prev.users, isLoading: false, error: errorMessage },
+            inquiries: { ...prev.inquiries, isLoading: false, error: errorMessage }
+          }));
         }
       };
 
@@ -84,52 +133,68 @@ export default function AdminDashboard() {
   const statistics = [
     {
       title: 'Total Properties',
-      value: isLoadingProperties ? '...' : totalProperties,
+      value: stats.properties.isLoading ? '...' : stats.properties.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
       ),
-      change: { value: monthlyChange, isPositive: isPositiveChange },
+      change: stats.properties.data ? { 
+        value: stats.properties.data.monthlyChange, 
+        isPositive: stats.properties.data.isPositive 
+      } : null,
       colorClass: 'bg-blue-500',
-      onClick: () => router.push('/admin/properties')
+      onClick: () => router.push('/admin/properties'),
+      error: stats.properties.error
     },
     {
       title: 'Active Users',
-      value: isLoadingUsers ? '...' : activeUsers,
+      value: stats.users.isLoading ? '...' : stats.users.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
       ),
-      change: { value: userChange, isPositive: isPositiveUserChange },
+      change: stats.users.data ? { 
+        value: stats.users.data.monthlyChange, 
+        isPositive: stats.users.data.isPositive 
+      } : null,
       colorClass: 'bg-green-500',
-      onClick: () => router.push('/admin/users')
+      onClick: () => router.push('/admin/users'),
+      error: stats.users.error
     },
     {
       title: 'New Inquiries',
-      value: isLoadingInquiries ? '...' : totalInquiries,
+      value: stats.inquiries.isLoading ? '...' : stats.inquiries.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
       ),
-      change: { value: inquiryChange, isPositive: isPositiveInquiryChange },
+      change: stats.inquiries.data ? { 
+        value: stats.inquiries.data.monthlyChange, 
+        isPositive: stats.inquiries.data.isPositive 
+      } : null,
       colorClass: 'bg-purple-500',
-      onClick: () => router.push('/admin/inquiries')
+      onClick: () => router.push('/admin/inquiries'),
+      error: stats.inquiries.error
     },
     {
       title: 'Properties Viewed',
-      value: isLoadingViews ? '...' : totalViews.toLocaleString(),
+      value: stats.views.isLoading ? '...' : stats.views.data?.total.toLocaleString() || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
       ),
-      change: { value: viewsChange, isPositive: isViewsChangePositive },
+      change: stats.views.data ? { 
+        value: stats.views.data.change, 
+        isPositive: stats.views.data.isPositive 
+      } : null,
       colorClass: 'bg-yellow-500',
-      onClick: () => router.push('/admin/analytics')
+      onClick: () => router.push('/admin/analytics'),
+      error: stats.views.error
     },
   ];
 
