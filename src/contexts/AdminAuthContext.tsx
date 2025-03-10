@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
   signInWithEmailAndPassword, 
@@ -25,7 +25,13 @@ interface AdminAuthContextType {
   logout: () => Promise<void>;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+const AdminAuthContext = createContext<AdminAuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => {},
+  logout: async () => {}
+});
 
 // Admin email for validation
 const ADMIN_EMAIL = 'teamalisyed@gmail.com';
@@ -36,13 +42,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  console.log('AdminAuthProvider render:', { 
-    pathname, 
-    isLoading, 
-    isAuthenticated: !!user,
-    isInitialized 
-  });
 
   // Handle authentication state changes
   useEffect(() => {
@@ -190,7 +189,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAdminAuth() {
   const context = useContext(AdminAuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAdminAuth must be used within an AdminAuthProvider');
   }
   return context;

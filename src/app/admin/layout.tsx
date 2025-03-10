@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { AdminAuthProvider, useAdminAuth } from '@/contexts/AdminAuthContext';
 import { usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
@@ -54,8 +54,10 @@ function AdminLayoutContent({ children }: AdminLayoutContentProps) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminLayoutContent>
-      {children}
-    </AdminLayoutContent>
+    <AdminAuthProvider>
+      <AdminLayoutContent>
+        {children}
+      </AdminLayoutContent>
+    </AdminAuthProvider>
   );
 } 
