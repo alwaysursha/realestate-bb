@@ -84,7 +84,7 @@ export default function AdminDashboard() {
         
         console.log('Stats fetched:', { propertyStats, userStats, inquiryStats, viewStats });
 
-        setStats(prev => ({
+        setStats({
           properties: { 
             isLoading: false, 
             data: propertyStats, 
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
             data: viewStats,
             error: null
           }
-        }));
+        });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
         const errorMessage = error instanceof Error ? error.message : 'An error occurred';

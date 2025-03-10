@@ -2,7 +2,7 @@ import { Property } from '@/types/property';
 import { getAllProperties, getPropertyStats, getViewsData } from './propertiesService';
 import { inquiryService } from './inquiryService';
 import { userService } from './userService';
-import { StatsData } from '@/types/stats';
+import { StatsData, ViewsData } from '@/types/stats';
 
 export interface ReportData {
   date: string;
@@ -14,16 +14,8 @@ export interface ReportData {
     viewsChange: number;
     isViewsChangePositive: boolean;
   };
-  userStats: {
-    total: number;
-    monthlyChange: number;
-    isPositive: boolean;
-  };
-  inquiryStats: {
-    total: number;
-    monthlyChange: number;
-    isPositive: boolean;
-  };
+  userStats: StatsData;
+  inquiryStats: StatsData;
   viewsData: {
     totalViews: number;
     lastMonthViews: number;
@@ -90,14 +82,20 @@ export const reportService = {
     }
   },
   
-  async getViewStats(): Promise<StatsData> {
+  async getViewStats(): Promise<ViewsData> {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     
+    const total = Math.floor(Math.random() * 10000);
+    const monthlyChange = Math.floor(Math.random() * 100);
+    const isPositive = Math.random() > 0.5;
+    const change = Math.floor(Math.random() * 50);
+    
     return {
-      total: Math.floor(Math.random() * 10000),
-      monthlyChange: Math.floor(Math.random() * 100),
-      isPositive: Math.random() > 0.5
+      total,
+      monthlyChange,
+      isPositive,
+      change
     };
   },
   
