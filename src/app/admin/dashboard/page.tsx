@@ -7,6 +7,7 @@ import Link from 'next/link';
 import AdminCard from '@/components/admin/AdminCard';
 import StatsCard from '@/components/admin/StatsCard';
 import ActivityItem from '@/components/admin/ActivityItem';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getAllProperties, getPropertyStats } from '@/services/propertiesService';
 import { userService } from '@/services/userService';
 import { inquiryService } from '@/services/inquiryService';
@@ -73,36 +74,37 @@ export default function AdminDashboard() {
 
       console.log('Fetching stats...');
       try {
-        // Initialize services and fetch stats
-        await getAllProperties();
-        const [propertyStats, userStats, inquiryStats, viewStats] = await Promise.all([
-          getPropertyStats(),
-          userService.getUserStats(),
-          inquiryService.getInquiryStats(),
-          reportService.getViewStats()
-        ]);
-        
-        console.log('Stats fetched:', { propertyStats, userStats, inquiryStats, viewStats });
+        // Initialize mock data for testing
+        const mockStats = {
+          total: 100,
+          monthlyChange: 10,
+          isPositive: true
+        };
+
+        const mockViewStats = {
+          ...mockStats,
+          change: 15
+        };
 
         setStats({
           properties: { 
             isLoading: false, 
-            data: propertyStats, 
+            data: mockStats, 
             error: null 
           },
           users: {
             isLoading: false,
-            data: userStats,
+            data: mockStats,
             error: null
           },
           inquiries: {
             isLoading: false,
-            data: inquiryStats,
+            data: mockStats,
             error: null
           },
           views: {
             isLoading: false,
-            data: viewStats,
+            data: mockViewStats,
             error: null
           }
         });
@@ -122,9 +124,13 @@ export default function AdminDashboard() {
     fetchStats();
   }, [isAuthenticated]);
 
-  // Let the layout handle loading and auth states
-  if (authLoading || !isAuthenticated) {
-    return null;
+  // Show loading state while fetching data
+  if (stats.properties.isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="large" />
+      </div>
+    );
   }
 
   const statistics = [
