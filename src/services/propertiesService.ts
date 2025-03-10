@@ -176,12 +176,8 @@ export const updateViewsData = async (): Promise<void> => {
 
 // Get all properties
 export const getAllProperties = async (): Promise<Property[]> => {
-  // Simulate API delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(getPropertiesFromStorage());
-    }, 300);
-  });
+  // No artificial delay in production
+  return getPropertiesFromStorage();
 };
 
 // Get property by ID

@@ -8,7 +8,12 @@ class InquiryService {
     if (typeof window === 'undefined') return [];
     
     const stored = localStorage.getItem(this.storageKey);
-    if (!stored) return [];
+    if (!stored) {
+      // Initialize with default inquiries
+      const defaultInquiries = this.createDefaultInquiries();
+      this.saveInquiriesToStorage(defaultInquiries);
+      return defaultInquiries;
+    }
 
     try {
       const inquiries = JSON.parse(stored);
@@ -31,14 +36,43 @@ class InquiryService {
     }
   }
 
+  private createDefaultInquiries(): Inquiry[] {
+    const mockInquiries: Inquiry[] = [
+      {
+        id: '1',
+        propertyId: '1',
+        propertySnapshot: {
+          id: '1',
+          title: 'Luxury Villa',
+          price: 1500000,
+          location: 'Beverly Hills',
+          mainImage: '/images/properties/villa1.jpg'
+        },
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '+1234567890',
+        message: 'I am interested in viewing this property.',
+        status: 'New',
+        notes: [],
+        statusHistory: [{
+          status: 'New',
+          changedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          changedBy: 'system'
+        }],
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+      }
+    ];
+
+    return mockInquiries;
+  }
+
   private saveInquiriesToStorage(inquiries: Inquiry[]): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(this.storageKey, JSON.stringify(inquiries));
   }
 
   async getInquiries(): Promise<Inquiry[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
     return this.getInquiriesFromStorage();
   }
 

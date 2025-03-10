@@ -7,7 +7,7 @@ import Link from 'next/link';
 import AdminCard from '@/components/admin/AdminCard';
 import StatsCard from '@/components/admin/StatsCard';
 import ActivityItem from '@/components/admin/ActivityItem';
-import { getAllProperties, getPropertyStats, clearAndReinitializeProperties } from '@/services/propertiesService';
+import { getAllProperties, getPropertyStats } from '@/services/propertiesService';
 import { userService } from '@/services/userService';
 import { inquiryService } from '@/services/inquiryService';
 import { reportService } from '@/services/reportService';
@@ -32,64 +32,47 @@ export default function AdminDashboard() {
   const [isViewsChangePositive, setIsViewsChangePositive] = useState<boolean>(true);
   const [isLoadingViews, setIsLoadingViews] = useState<boolean>(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Initialize mock data only once when authenticated
+  // Fetch stats when component mounts and is authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated && !isInitialized) {
-      const initializeMockData = async () => {
+    if (!authLoading && isAuthenticated) {
+      const fetchStats = async () => {
         try {
-          await inquiryService.initializeMockData();
-          await clearAndReinitializeProperties();
-          setIsInitialized(true);
+          const propertyStats = await getPropertyStats();
+          setTotalProperties(propertyStats.total);
+          setMonthlyChange(propertyStats.monthlyChange);
+          setIsPositiveChange(propertyStats.isPositive);
+          
+          if (propertyStats.totalViews !== undefined) {
+            setTotalViews(propertyStats.totalViews);
+            setViewsChange(propertyStats.viewsChange || 0);
+            setIsViewsChangePositive(propertyStats.isViewsChangePositive || true);
+            setIsLoadingViews(false);
+          }
+
+          const userStats = await userService.getUserStats();
+          setActiveUsers(userStats.total);
+          setUserChange(userStats.monthlyChange);
+          setIsPositiveUserChange(userStats.isPositive);
+
+          const inquiryStats = await inquiryService.getInquiryStats();
+          setTotalInquiries(inquiryStats.total);
+          setInquiryChange(inquiryStats.monthlyChange);
+          setIsPositiveInquiryChange(inquiryStats.isPositive);
         } catch (error) {
-          console.error('Failed to initialize mock data:', error);
+          console.error('Failed to fetch stats:', error);
+        } finally {
+          setIsLoadingProperties(false);
+          setIsLoadingUsers(false);
+          setIsLoadingInquiries(false);
         }
       };
-      initializeMockData();
+
+      fetchStats();
     }
-  }, [authLoading, isAuthenticated, isInitialized]);
+  }, [authLoading, isAuthenticated]);
 
-  // Fetch stats only when initialized
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const fetchStats = async () => {
-      try {
-        const propertyStats = await getPropertyStats();
-        setTotalProperties(propertyStats.total);
-        setMonthlyChange(propertyStats.monthlyChange);
-        setIsPositiveChange(propertyStats.isPositive);
-        
-        if (propertyStats.totalViews !== undefined) {
-          setTotalViews(propertyStats.totalViews);
-          setViewsChange(propertyStats.viewsChange || 0);
-          setIsViewsChangePositive(propertyStats.isViewsChangePositive || true);
-          setIsLoadingViews(false);
-        }
-
-        const userStats = await userService.getUserStats();
-        setActiveUsers(userStats.total);
-        setUserChange(userStats.monthlyChange);
-        setIsPositiveUserChange(userStats.isPositive);
-
-        const inquiryStats = await inquiryService.getInquiryStats();
-        setTotalInquiries(inquiryStats.total);
-        setInquiryChange(inquiryStats.monthlyChange);
-        setIsPositiveInquiryChange(inquiryStats.isPositive);
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-      } finally {
-        setIsLoadingProperties(false);
-        setIsLoadingUsers(false);
-        setIsLoadingInquiries(false);
-      }
-    };
-
-    fetchStats();
-  }, [isInitialized]);
-
-  // Show loading state while authenticating or initializing
+  // Show loading state while authenticating
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
