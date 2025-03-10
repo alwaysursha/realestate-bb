@@ -97,7 +97,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const handleRouting = useCallback(async () => {
+  // Handle routing based on authentication state
+  useEffect(() => {
     if (!isInitialized || isLoading) {
       console.log('Auth not initialized or still loading, skipping routing');
       return;
@@ -111,7 +112,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     console.log('Handling routing:', { pathname, isAuthenticated: !!user });
 
     const isLoginPage = pathname === '/admin/login';
-    const isDashboardPage = pathname === '/admin/dashboard';
     const isRootAdminPage = pathname === '/admin' || pathname === '/admin/';
 
     if (user) {
@@ -127,11 +127,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         router.replace('/admin/login');
       }
     }
-  }, [user, isLoading, isInitialized, pathname, router]);
-
-  useEffect(() => {
-    handleRouting();
-  }, [handleRouting]);
+  }, [user, isLoading, isInitialized, pathname]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -142,10 +138,21 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('You do not have admin privileges');
       }
       
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      if (firebaseUser.email !== ADMIN_EMAIL) {
+        console.log('Firebase user not admin, logging out');
+        await signOut(auth);
+        throw new Error('You do not have admin privileges');
+      }
+
+      console.log('Login successful');
       toast.success('Login successful');
+      router.replace('/admin/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
+      setIsLoading(false);
       toast.error(error.message || 'Login failed');
       throw error;
     }
