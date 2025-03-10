@@ -36,11 +36,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Check if user is authenticated on initial load
+  // Handle authentication state changes
   useEffect(() => {
+    let mounted = true;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
       
+      if (!mounted) return;
+
       if (firebaseUser) {
         // Check if the user is the admin
         if (firebaseUser.email === ADMIN_EMAIL) {
@@ -65,40 +69,42 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
     
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
-  // Redirect unauthenticated users away from protected routes
+  // Handle routing based on authentication state
   useEffect(() => {
-    if (!isLoading) {
-      console.log('Redirection check - Auth state:', { 
-        isAuthenticated: !!user, 
-        pathname, 
-        user: user ? 'User exists' : 'No user' 
-      });
-      
-      // If at the root admin path, redirect to login or dashboard
+    if (isLoading) return;
+
+    const handleRouting = async () => {
+      console.log('Handling routing:', { pathname, isAuthenticated: !!user });
+
       if (pathname === '/admin' || pathname === '/admin/') {
         if (user) {
-          router.push('/admin/dashboard');
+          await router.push('/admin/dashboard');
         } else {
-          router.push('/admin/login');
+          await router.push('/admin/login');
         }
         return;
       }
-      
-      // If not authenticated and trying to access admin routes (except login)
-      if (!user && pathname && pathname.startsWith('/admin') && !pathname.includes('/admin/login')) {
-        console.log('Not authenticated, redirecting to login');
-        router.push('/admin/login');
+
+      if (!user && pathname?.startsWith('/admin') && !pathname?.includes('/admin/login')) {
+        console.log('Unauthorized access, redirecting to login');
+        await router.push('/admin/login');
+        return;
       }
-      
-      // If authenticated and trying to access login page
-      if (user && pathname && pathname.includes('/admin/login')) {
+
+      if (user && pathname?.includes('/admin/login')) {
         console.log('Already authenticated, redirecting to dashboard');
-        router.push('/admin/dashboard');
+        await router.push('/admin/dashboard');
+        return;
       }
-    }
+    };
+
+    handleRouting();
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
@@ -106,26 +112,26 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     console.log('Login attempt started with:', email);
     
     try {
-      // Check if the email is the admin email
       if (email !== ADMIN_EMAIL) {
         throw new Error('You do not have admin privileges');
       }
       
-      // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
-      // Set user data
-      setUser({
+      const userData = {
         id: firebaseUser.uid,
         name: firebaseUser.displayName || 'Admin User',
         email: firebaseUser.email || email,
         role: 'admin'
-      });
+      };
       
+      setUser(userData);
       console.log('Login successful');
       toast.success('Login successful');
-      return;
+      
+      // Ensure user is set before navigation
+      await router.push('/admin/dashboard');
     } catch (error: any) {
       console.error('Error in login function:', error);
       toast.error(error.message || 'Login failed');
@@ -137,12 +143,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       await signOut(auth);
       setUser(null);
-      router.push('/admin/login');
+      await router.push('/admin/login');
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
       toast.error('Failed to log out');
+    } finally {
+      setIsLoading(false);
     }
   };
 
