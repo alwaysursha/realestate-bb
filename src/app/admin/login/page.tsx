@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { toast } from 'react-hot-toast';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -13,54 +13,35 @@ export default function AdminLogin() {
   const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const router = useRouter();
 
-  // Don't render the login form if already authenticated or loading
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If already authenticated, the AdminAuthContext will handle redirection
-  if (isAuthenticated) {
-    return null;
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted with:', { email });
     setError('');
     setIsLoading(true);
 
-    // Basic validation
-    if (!email || !password) {
-      console.log('Validation failed: Email or password missing');
-      setError('Email and password are required');
-      setIsLoading(false);
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log('Validation failed: Invalid email format');
-      setError('Please enter a valid email address');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      console.log('Calling login function from context');
       await login(email, password);
       // The AdminAuthContext will handle redirection
     } catch (err: any) {
-      console.error('Login error caught in handleSubmit:', err);
+      console.error('Login error:', err);
       setError(err.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading spinner while authentication is being determined
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
+  // If already authenticated, return null (AdminAuthContext will handle redirection)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
