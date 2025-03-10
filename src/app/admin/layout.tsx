@@ -31,33 +31,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Handle redirection based on authentication state
-  useEffect(() => {
-    if (!isLoading) {
-      // If at the root admin path, redirect to login or dashboard
-      if (pathname === '/admin' || pathname === '/admin/') {
-        if (isAuthenticated) {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/admin/login');
-        }
-        return;
-      }
-
-      // If not authenticated and not on login page, redirect to login
-      if (!isAuthenticated && pathname && !pathname.includes('/admin/login')) {
-        router.push('/admin/login');
-        return;
-      }
-
-      // If authenticated and on login page, redirect to dashboard
-      if (isAuthenticated && pathname && pathname.includes('/admin/login')) {
-        router.push('/admin/dashboard');
-        return;
-      }
-    }
-  }, [isAuthenticated, isLoading, pathname, router]);
-
   // If still loading authentication state, show loading spinner
   if (isLoading) {
     return (
@@ -65,6 +38,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     );
+  }
+
+  // If not authenticated and not on login page, don't render anything
+  // The context will handle the redirection
+  if (!isAuthenticated && !pathname?.includes('/admin/login')) {
+    return null;
+  }
+
+  // If not authenticated, just render the children (login page)
+  if (!isAuthenticated) {
+    return children;
   }
 
   // Navigation items
@@ -125,11 +109,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       ),
     },
   ];
-
-  // If not authenticated, don't show the admin layout
-  if (!isAuthenticated) {
-    return children;
-  }
 
   return (
     <div className="min-h-screen bg-gray-100">

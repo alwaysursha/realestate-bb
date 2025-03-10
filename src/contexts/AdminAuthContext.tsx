@@ -80,26 +80,30 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
 
     const handleRouting = async () => {
-      console.log('Handling routing:', { pathname, isAuthenticated: !!user });
+      if (!pathname) return;
 
+      // Only handle routing for admin paths
+      if (!pathname.startsWith('/admin')) return;
+
+      // If at admin root, redirect appropriately
       if (pathname === '/admin' || pathname === '/admin/') {
         if (user) {
-          await router.push('/admin/dashboard');
+          router.replace('/admin/dashboard');
         } else {
-          await router.push('/admin/login');
+          router.replace('/admin/login');
         }
         return;
       }
 
-      if (!user && pathname?.startsWith('/admin') && !pathname?.includes('/admin/login')) {
-        console.log('Unauthorized access, redirecting to login');
-        await router.push('/admin/login');
+      // If not authenticated and not on login page, redirect to login
+      if (!user && !pathname.includes('/admin/login')) {
+        router.replace('/admin/login');
         return;
       }
 
-      if (user && pathname?.includes('/admin/login')) {
-        console.log('Already authenticated, redirecting to dashboard');
-        await router.push('/admin/dashboard');
+      // If authenticated and on login page, redirect to dashboard
+      if (user && pathname.includes('/admin/login')) {
+        router.replace('/admin/dashboard');
         return;
       }
     };
@@ -108,9 +112,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    console.log('Login attempt started with:', email);
-    
     try {
       if (email !== ADMIN_EMAIL) {
         throw new Error('You do not have admin privileges');
@@ -119,6 +120,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
+      if (firebaseUser.email !== ADMIN_EMAIL) {
+        await signOut(auth);
+        throw new Error('You do not have admin privileges');
+      }
+
       const userData = {
         id: firebaseUser.uid,
         name: firebaseUser.displayName || 'Admin User',
@@ -127,17 +133,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       };
       
       setUser(userData);
-      console.log('Login successful');
       toast.success('Login successful');
-      
-      // Ensure user is set before navigation
-      await router.push('/admin/dashboard');
+      router.replace('/admin/dashboard');
     } catch (error: any) {
       console.error('Error in login function:', error);
       toast.error(error.message || 'Login failed');
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
