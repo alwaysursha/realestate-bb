@@ -13,7 +13,7 @@ import { inquiryService } from '@/services/inquiryService';
 import { reportService } from '@/services/reportService';
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isLoading, logout } = useAdminAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const router = useRouter();
   const [totalProperties, setTotalProperties] = useState<number>(0);
   const [monthlyChange, setMonthlyChange] = useState<number>(0);
@@ -32,35 +32,35 @@ export default function AdminDashboard() {
   const [isViewsChangePositive, setIsViewsChangePositive] = useState<boolean>(true);
   const [isLoadingViews, setIsLoadingViews] = useState<boolean>(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Check authentication
+  // Initialize mock data only once when authenticated
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/admin/login/');
+    if (!authLoading && isAuthenticated && !isInitialized) {
+      const initializeMockData = async () => {
+        try {
+          await inquiryService.initializeMockData();
+          await clearAndReinitializeProperties();
+          setIsInitialized(true);
+        } catch (error) {
+          console.error('Failed to initialize mock data:', error);
+        }
+      };
+      initializeMockData();
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [authLoading, isAuthenticated, isInitialized]);
 
-  // Initialize mock data
+  // Fetch stats only when initialized
   useEffect(() => {
-    const initializeMockData = async () => {
-      await inquiryService.initializeMockData();
-      // Reset properties to get more realistic view counts
-      await clearAndReinitializeProperties();
-    };
-    initializeMockData();
-  }, []);
+    if (!isInitialized) return;
 
-  // Fetch property and user stats
-  useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch property stats
         const propertyStats = await getPropertyStats();
         setTotalProperties(propertyStats.total);
         setMonthlyChange(propertyStats.monthlyChange);
         setIsPositiveChange(propertyStats.isPositive);
         
-        // Set view stats
         if (propertyStats.totalViews !== undefined) {
           setTotalViews(propertyStats.totalViews);
           setViewsChange(propertyStats.viewsChange || 0);
@@ -68,13 +68,11 @@ export default function AdminDashboard() {
           setIsLoadingViews(false);
         }
 
-        // Fetch user stats
         const userStats = await userService.getUserStats();
         setActiveUsers(userStats.total);
         setUserChange(userStats.monthlyChange);
         setIsPositiveUserChange(userStats.isPositive);
 
-        // Fetch inquiry stats
         const inquiryStats = await inquiryService.getInquiryStats();
         setTotalInquiries(inquiryStats.total);
         setInquiryChange(inquiryStats.monthlyChange);
@@ -89,9 +87,17 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-  }, []);
+  }, [isInitialized]);
 
-  // Mock statistics data
+  // Show loading state while authenticating or initializing
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   const statistics = [
     {
       title: 'Total Properties',
@@ -144,7 +150,6 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Mock recent activities
   const recentActivities = [
     {
       user: { name: 'Jessica Williams', avatar: '/images/avatars/agent-3.jpg' },
@@ -183,7 +188,6 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Mock popular properties
   const popularProperties = [
     {
       title: 'The Grand Residences',
@@ -217,7 +221,6 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Mock recent logins
   const recentLogins = [
     {
       user: { name: 'John Doe', avatar: '/images/avatars/avatar-1.jpg' },
@@ -249,7 +252,6 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Mock notes
   const [notes, setNotes] = useState([
     {
       id: 1,
@@ -273,7 +275,6 @@ export default function AdminDashboard() {
   const [newNote, setNewNote] = useState('');
   const [notePriority, setNotePriority] = useState('medium');
 
-  // Add new note
   const addNote = () => {
     if (newNote.trim() === '') return;
     
@@ -289,19 +290,16 @@ export default function AdminDashboard() {
     setNotePriority('medium');
   };
 
-  // Delete note
   const deleteNote = (id: number) => {
     setNotes(notes.filter(note => note.id !== id));
   };
 
-  // Generate and download report
   const handleGenerateReport = async () => {
     try {
       setIsGeneratingReport(true);
       const reportData = await reportService.generateReport();
       const csv = reportService.convertToCSV(reportData);
       
-      // Generate filename with current date
       const date = new Date();
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const filename = `real-estate-report-${formattedDate}.csv`;
@@ -315,339 +313,85 @@ export default function AdminDashboard() {
     }
   };
 
-  // If still loading authentication state, show loading spinner
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If not authenticated, don't render the page content
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Page title and actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <div className="mt-3 sm:mt-0">
-          <button 
-            className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center ${isGeneratingReport ? 'opacity-75 cursor-not-allowed' : ''}`}
-            onClick={handleGenerateReport}
-            disabled={isGeneratingReport}
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}</h1>
+        <p className="text-gray-600 mt-2">Manage your real estate platform</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Properties Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Properties</h2>
+          <p className="text-gray-600">Manage your property listings</p>
+          <button
+            onClick={() => router.push('/admin/properties')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
           >
-            {isGeneratingReport ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Generate Report
-              </>
-            )}
+            View Properties
           </button>
         </div>
-      </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {statistics.map((stat, index) => (
-          <StatsCard
-            key={index}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            change={stat.change}
-            colorClass={stat.colorClass}
-            onClick={stat.onClick}
-          />
-        ))}
-      </div>
+        {/* Developers Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Developers</h2>
+          <p className="text-gray-600">Manage property developers</p>
+          <button
+            onClick={() => router.push('/admin/developers')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            View Developers
+          </button>
+        </div>
 
-      {/* Main content area */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Recent Activity */}
-        <AdminCard
-          title="Recent Activity"
-          footer={
-            <div className="text-center">
-              <button className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                View all activity
-              </button>
-            </div>
-          }
-        >
-          <div className="space-y-5">
-            {recentActivities.map((activity, index) => (
-              <ActivityItem
-                key={index}
-                user={activity.user}
-                action={activity.action}
-                target={activity.target}
-                timestamp={activity.timestamp}
-                iconColor={activity.iconColor}
-              />
-            ))}
-          </div>
-        </AdminCard>
+        {/* Agents Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Agents</h2>
+          <p className="text-gray-600">Manage real estate agents</p>
+          <button
+            onClick={() => router.push('/admin/agents')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            View Agents
+          </button>
+        </div>
 
-        {/* Popular Properties */}
-        <AdminCard title="Popular Properties">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Property
-                  </th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Views
-                  </th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Favorites
-                  </th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Inquiries
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {popularProperties.map((property, index) => (
-                  <tr key={index}>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {property.title}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {property.views}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {property.favorites}
-                    </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {property.inquiries}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </AdminCard>
+        {/* Inquiries Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Inquiries</h2>
+          <p className="text-gray-600">View and manage customer inquiries</p>
+          <button
+            onClick={() => router.push('/admin/inquiries')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            View Inquiries
+          </button>
+        </div>
 
-        {/* Recent Logins */}
-        <AdminCard title="Recent Logins">
-          <div className="space-y-4">
-            {recentLogins.map((login, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    {login.user.avatar ? (
-                      <img
-                        className="h-10 w-10 rounded-full"
-                        src={login.user.avatar}
-                        alt={login.user.name}
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-sm font-medium text-gray-500">
-                          {login.user.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{login.user.name}</p>
-                    <p className="text-xs text-gray-500">{login.device}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">{login.location}</p>
-                  <p className="text-xs text-gray-500">{login.timestamp}</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    login.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {login.status === 'success' ? 'Success' : 'Failed'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AdminCard>
+        {/* Users Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Users</h2>
+          <p className="text-gray-600">Manage user accounts</p>
+          <button
+            onClick={() => router.push('/admin/users')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            View Users
+          </button>
+        </div>
 
-        {/* Notes */}
-        <AdminCard title="Notes & Reminders">
-          <div className="space-y-4">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Add a new note..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-              <select
-                value={notePriority}
-                onChange={(e) => setNotePriority(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-              <button
-                onClick={addNote}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Add
-              </button>
-            </div>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {notes.map((note) => (
-                <div key={note.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      note.priority === 'high' ? 'bg-red-100 text-red-800' :
-                      note.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {note.priority.charAt(0).toUpperCase() + note.priority.slice(1)}
-                    </span>
-                    <button
-                      onClick={() => deleteNote(note.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-700">{note.content}</p>
-                  <p className="mt-1 text-xs text-gray-500">{note.timestamp}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </AdminCard>
-
-        {/* Monthly Stats */}
-        <AdminCard title="Monthly Statistics">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">New Users</h3>
-              <div className="flex items-end space-x-2">
-                <div className="bg-blue-500 w-4 h-20 rounded-t-sm"></div>
-                <div className="bg-blue-500 w-4 h-24 rounded-t-sm"></div>
-                <div className="bg-blue-500 w-4 h-16 rounded-t-sm"></div>
-                <div className="bg-blue-500 w-4 h-28 rounded-t-sm"></div>
-                <div className="bg-blue-500 w-4 h-32 rounded-t-sm"></div>
-                <div className="bg-blue-500 w-4 h-24 rounded-t-sm"></div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Property Listings</h3>
-              <div className="flex items-end space-x-2">
-                <div className="bg-green-500 w-4 h-16 rounded-t-sm"></div>
-                <div className="bg-green-500 w-4 h-20 rounded-t-sm"></div>
-                <div className="bg-green-500 w-4 h-28 rounded-t-sm"></div>
-                <div className="bg-green-500 w-4 h-24 rounded-t-sm"></div>
-                <div className="bg-green-500 w-4 h-32 rounded-t-sm"></div>
-                <div className="bg-green-500 w-4 h-36 rounded-t-sm"></div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Inquiries</h3>
-              <div className="flex items-end space-x-2">
-                <div className="bg-purple-500 w-4 h-24 rounded-t-sm"></div>
-                <div className="bg-purple-500 w-4 h-16 rounded-t-sm"></div>
-                <div className="bg-purple-500 w-4 h-20 rounded-t-sm"></div>
-                <div className="bg-purple-500 w-4 h-28 rounded-t-sm"></div>
-                <div className="bg-purple-500 w-4 h-32 rounded-t-sm"></div>
-                <div className="bg-purple-500 w-4 h-24 rounded-t-sm"></div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Revenue (AED)</h3>
-              <div className="flex items-end space-x-2">
-                <div className="bg-yellow-500 w-4 h-20 rounded-t-sm"></div>
-                <div className="bg-yellow-500 w-4 h-28 rounded-t-sm"></div>
-                <div className="bg-yellow-500 w-4 h-32 rounded-t-sm"></div>
-                <div className="bg-yellow-500 w-4 h-36 rounded-t-sm"></div>
-                <div className="bg-yellow-500 w-4 h-40 rounded-t-sm"></div>
-                <div className="bg-yellow-500 w-4 h-44 rounded-t-sm"></div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
-            </div>
-          </div>
-        </AdminCard>
-
-        {/* Property Views */}
-        <AdminCard title="Recent Property Views">
-          <div className="space-y-4">
-            {popularProperties.map((property, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{property.title}</p>
-                  <div className="mt-1 flex items-center">
-                    <span className="text-xs text-gray-500 mr-2">Views today:</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${Math.min(100, (property.views / 15))}%` }}
-                      ></div>
-                    </div>
-                    <span className="ml-2 text-xs font-medium text-gray-700">{Math.floor(property.views / 10)}</span>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AdminCard>
+        {/* Settings Card */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Settings</h2>
+          <p className="text-gray-600">Configure system settings</p>
+          <button
+            onClick={() => router.push('/admin/settings')}
+            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            View Settings
+          </button>
+        </div>
       </div>
     </div>
   );
