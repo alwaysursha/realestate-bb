@@ -56,19 +56,29 @@ export default function AdminDashboard() {
   });
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
+  console.log('Dashboard render:', { 
+    isAuthenticated, 
+    authLoading,
+    hasUser: !!user,
+    userEmail: user?.email
+  });
+
   // Fetch stats when component mounts and is authenticated
   useEffect(() => {
-    console.log('Dashboard useEffect:', { authLoading, isAuthenticated });
-    
     const fetchStats = async () => {
-      try {
-        console.log('Fetching property stats...');
-        // Initialize properties service only
-        await getAllProperties();
+      if (!isAuthenticated) {
+        console.log('Not authenticated, skipping stats fetch');
+        return;
+      }
 
-        // Now fetch the property stats
+      console.log('Fetching stats...');
+      try {
+        // Initialize properties service
+        await getAllProperties();
+        
+        // Fetch property stats
         const propertyStats = await getPropertyStats();
-        console.log('Property stats fetched:', propertyStats);
+        console.log('Stats fetched:', propertyStats);
 
         setStats(prev => ({
           ...prev,
@@ -88,19 +98,11 @@ export default function AdminDashboard() {
       }
     };
 
-    if (isAuthenticated) {
-      console.log('User is authenticated, fetching stats...');
-      fetchStats();
-    }
+    fetchStats();
   }, [isAuthenticated]);
 
-  // Let the layout handle the authentication loading state
-  if (authLoading) {
-    return null;
-  }
-
-  // Let the layout handle the authentication check
-  if (!isAuthenticated) {
+  // Let the layout handle loading and auth states
+  if (authLoading || !isAuthenticated) {
     return null;
   }
 

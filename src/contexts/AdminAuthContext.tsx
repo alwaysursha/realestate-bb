@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
   signInWithEmailAndPassword, 
@@ -22,7 +22,7 @@ interface AdminAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -33,10 +33,16 @@ const ADMIN_EMAIL = 'teamalisyed@gmail.com';
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  console.log('AdminAuthProvider render:', { pathname, isLoading, isAuthenticated: !!user });
+  console.log('AdminAuthProvider render:', { 
+    pathname, 
+    isLoading, 
+    isAuthenticated: !!user,
+    isInitialized 
+  });
 
   // Handle authentication state changes
   useEffect(() => {
@@ -47,17 +53,14 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Auth state changed:', { 
         hasUser: !!firebaseUser, 
         email: firebaseUser?.email,
-        mounted 
+        mounted,
+        isInitialized
       });
       
-      if (!mounted) {
-        console.log('Component unmounted, skipping state update');
-        return;
-      }
+      if (!mounted) return;
 
       try {
         if (firebaseUser) {
-          // Check if the user is the admin
           if (firebaseUser.email === ADMIN_EMAIL) {
             console.log('Admin user authenticated, setting user data');
             const userData = {
@@ -67,114 +70,82 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
               role: 'admin'
             };
             setUser(userData);
-            setIsLoading(false);
-            console.log('User data set:', userData);
           } else {
-            console.log('User is not an admin, logging out');
+            console.log('User is not admin, clearing session');
             await signOut(auth);
             setUser(null);
-            setIsLoading(false);
             toast.error('You do not have admin privileges');
           }
         } else {
-          console.log('No user authenticated, clearing user data');
+          console.log('No user authenticated');
           setUser(null);
-          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error in auth state change:', error);
         setUser(null);
+      } finally {
+        if (!isInitialized) {
+          setIsInitialized(true);
+        }
         setIsLoading(false);
       }
     });
     
     return () => {
-      console.log('Cleaning up auth state listener');
       mounted = false;
       unsubscribe();
     };
   }, []);
 
-  // Handle routing based on authentication state
-  useEffect(() => {
-    if (isLoading) {
-      console.log('Still loading, skipping routing');
+  const handleRouting = useCallback(async () => {
+    if (!isInitialized || isLoading) {
+      console.log('Auth not initialized or still loading, skipping routing');
       return;
     }
 
-    const handleRouting = async () => {
-      if (!pathname) {
-        console.log('No pathname available');
-        return;
-      }
+    if (!pathname?.startsWith('/admin')) {
+      console.log('Not an admin path, skipping routing');
+      return;
+    }
 
-      // Only handle routing for admin paths
-      if (!pathname.startsWith('/admin')) {
-        console.log('Not an admin path, skipping routing');
-        return;
-      }
+    console.log('Handling routing:', { pathname, isAuthenticated: !!user });
 
-      console.log('Handling admin routing:', { 
-        pathname, 
-        isAuthenticated: !!user,
-        currentUser: user?.email 
-      });
+    const isLoginPage = pathname === '/admin/login';
+    const isDashboardPage = pathname === '/admin/dashboard';
+    const isRootAdminPage = pathname === '/admin' || pathname === '/admin/';
 
-      // If at admin root, redirect appropriately
-      if (pathname === '/admin' || pathname === '/admin/') {
-        if (user) {
-          console.log('At admin root with user, redirecting to dashboard');
-          router.replace('/admin/dashboard');
-        } else {
-          console.log('At admin root without user, redirecting to login');
-          router.replace('/admin/login');
-        }
-        return;
-      }
-
-      // If not authenticated and not on login page, redirect to login
-      if (!user && pathname !== '/admin/login') {
-        console.log('Not authenticated and not on login, redirecting to login');
-        router.replace('/admin/login');
-        return;
-      }
-
-      // If authenticated and on login page, redirect to dashboard
-      if (user && pathname === '/admin/login') {
-        console.log('Authenticated and on login page, redirecting to dashboard');
+    if (user) {
+      // User is authenticated
+      if (isLoginPage || isRootAdminPage) {
+        console.log('Authenticated user on login/root page, redirecting to dashboard');
         router.replace('/admin/dashboard');
-        return;
       }
-    };
+    } else {
+      // User is not authenticated
+      if (!isLoginPage) {
+        console.log('Unauthenticated user not on login page, redirecting to login');
+        router.replace('/admin/login');
+      }
+    }
+  }, [user, isLoading, isInitialized, pathname, router]);
 
+  useEffect(() => {
     handleRouting();
-  }, [user, isLoading, pathname, router]);
+  }, [handleRouting]);
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Login attempt:', { email });
+      console.log('Attempting login:', { email });
       setIsLoading(true);
       
       if (email !== ADMIN_EMAIL) {
-        console.log('Not admin email, rejecting');
         throw new Error('You do not have admin privileges');
       }
       
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      if (firebaseUser.email !== ADMIN_EMAIL) {
-        console.log('Firebase user not admin, logging out');
-        await signOut(auth);
-        throw new Error('You do not have admin privileges');
-      }
-
-      console.log('Login successful');
+      await signInWithEmailAndPassword(auth, email, password);
       toast.success('Login successful');
-      // Let the auth state listener handle setting the user
     } catch (error: any) {
-      console.error('Error in login function:', error);
-      setIsLoading(false);
+      console.error('Login error:', error);
       toast.error(error.message || 'Login failed');
       throw error;
     }
@@ -185,11 +156,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Logging out');
       setIsLoading(true);
       await signOut(auth);
-      // Let the auth state listener handle clearing the user
       toast.success('Logged out successfully');
+      router.replace('/admin/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Logout error:', error);
       toast.error('Failed to log out');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -197,7 +169,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     isAuthenticated: !!user,
-    isLoading,
+    isLoading: isLoading || !isInitialized,
     login,
     logout
   };

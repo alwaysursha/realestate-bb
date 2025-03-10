@@ -35,15 +35,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     pathname, 
     isLoading, 
     isAuthenticated,
-    isLoginPage: pathname?.includes('/admin/login')
+    user: user?.email
   });
 
-  // If on login page and not authenticated, show login page
-  if (pathname?.includes('/admin/login') && !isAuthenticated) {
-    return children;
-  }
-
-  // If loading, show loading spinner
+  // Show loading state while authenticating
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -52,19 +47,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If not authenticated and not on login page, redirect to login
-  if (!isAuthenticated) {
-    router.replace('/admin/login');
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  // If on login page and not authenticated, show login page
+  if (!isAuthenticated && pathname === '/admin/login') {
+    return children;
   }
 
-  // If authenticated and on login page, redirect to dashboard
-  if (isAuthenticated && pathname?.includes('/admin/login')) {
-    router.replace('/admin/dashboard');
+  // If not authenticated, the auth context will handle redirection
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -146,10 +135,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="text-right mr-3">
                   <p className="text-sm font-medium text-gray-700">{user?.name || 'Admin User'}</p>
                   <button 
-                    onClick={async () => {
-                      await logout();
-                      router.push('/admin/login');
-                    }}
+                    onClick={logout}
                     className="text-xs text-red-500 hover:text-red-700"
                   >
                     Logout
