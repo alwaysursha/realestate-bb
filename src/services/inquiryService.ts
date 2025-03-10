@@ -5,7 +5,14 @@ class InquiryService {
   private storageKey = 'inquiries';
 
   private getInquiriesFromStorage(): Inquiry[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {
+      // Return default inquiries during server-side rendering
+      return this.createDefaultInquiries().map(inquiry => ({
+        ...inquiry,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+        updatedAt: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+      }));
+    }
     
     const stored = localStorage.getItem(this.storageKey);
     if (!stored) {

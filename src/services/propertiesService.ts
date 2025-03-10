@@ -7,15 +7,22 @@ const VIEWS_STORAGE_KEY = 'property_views';
 
 // Get properties from localStorage or initialize with default data
 function getPropertiesFromStorage(): Property[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') {
+    // Return default data during server-side rendering
+    return allProperties.map(prop => ({
+      ...prop,
+      createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+      viewCount: Math.floor(Math.random() * 1000)
+    }));
+  }
   
   const stored = localStorage.getItem('properties');
   if (!stored) {
     // Initialize with all properties from the data file and add createdAt dates
     const propertiesWithDates = allProperties.map(prop => ({
       ...prop,
-      createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)), // Random date within last 30 days
-      viewCount: Math.floor(Math.random() * 1000) // Initialize with random view counts
+      createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+      viewCount: Math.floor(Math.random() * 1000)
     }));
     localStorage.setItem('properties', JSON.stringify(propertiesWithDates));
     return propertiesWithDates;
@@ -119,7 +126,13 @@ export const getViewsData = async (): Promise<{
   thisMonthViews: number;
 }> => {
   if (typeof window === 'undefined') {
-    return { totalViews: 0, lastMonthViews: 0, thisMonthViews: 0 };
+    // Return mock data during server-side rendering
+    const totalViews = Math.floor(Math.random() * 10000);
+    return {
+      totalViews,
+      lastMonthViews: Math.floor(totalViews * 0.8),
+      thisMonthViews: Math.floor(totalViews * 0.2)
+    };
   }
   
   const stored = localStorage.getItem(VIEWS_STORAGE_KEY);
@@ -128,8 +141,8 @@ export const getViewsData = async (): Promise<{
     const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
     const viewsData = {
       totalViews,
-      lastMonthViews: Math.floor(totalViews * 0.8), // Simulate last month's views
-      thisMonthViews: Math.floor(totalViews * 0.2), // Simulate this month's views
+      lastMonthViews: Math.floor(totalViews * 0.8),
+      thisMonthViews: Math.floor(totalViews * 0.2),
       lastUpdated: new Date()
     };
     localStorage.setItem(VIEWS_STORAGE_KEY, JSON.stringify(viewsData));

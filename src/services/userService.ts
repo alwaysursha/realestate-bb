@@ -5,7 +5,14 @@ const USERS_STORAGE_KEY = 'real_estate_users';
 
 class UserService {
   private getUsersFromStorage(): User[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {
+      // Return initial users during server-side rendering
+      return initialUsers.map(user => ({
+        ...user,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+        lastLogin: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+      }));
+    }
     
     const stored = localStorage.getItem(USERS_STORAGE_KEY);
     if (!stored) {
