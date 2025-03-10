@@ -50,9 +50,9 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<StatsState>({
     properties: { isLoading: true, data: null, error: null },
-    users: { isLoading: true, data: null, error: null },
-    inquiries: { isLoading: true, data: null, error: null },
-    views: { isLoading: true, data: null, error: null }
+    users: { isLoading: false, data: null, error: null },
+    inquiries: { isLoading: false, data: null, error: null },
+    views: { isLoading: false, data: null, error: null }
   });
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
@@ -61,55 +61,26 @@ export default function AdminDashboard() {
     if (!authLoading && isAuthenticated) {
       const fetchStats = async () => {
         try {
-          // Initialize services first
-          await Promise.all([
-            getAllProperties(), // This will initialize the properties service
-            userService.getUsers(), // This will initialize the users service
-            inquiryService.getInquiries() // This will initialize the inquiries service
-          ]);
+          // Initialize properties service only
+          await getAllProperties();
 
-          // Now fetch the stats
-          const [propertyStats, userStats, inquiryStats] = await Promise.all([
-            getPropertyStats(),
-            userService.getUserStats(),
-            inquiryService.getInquiryStats()
-          ]);
+          // Now fetch the property stats
+          const propertyStats = await getPropertyStats();
 
-          setStats({
+          setStats(prev => ({
+            ...prev,
             properties: { 
               isLoading: false, 
               data: propertyStats, 
               error: null 
-            },
-            users: { 
-              isLoading: false, 
-              data: userStats, 
-              error: null 
-            },
-            inquiries: { 
-              isLoading: false, 
-              data: inquiryStats, 
-              error: null 
-            },
-            views: { 
-              isLoading: false, 
-              data: {
-                total: propertyStats.totalViews || 0,
-                monthlyChange: propertyStats.monthlyChange,
-                isPositive: propertyStats.isPositive,
-                change: propertyStats.viewsChange || 0
-              }, 
-              error: null 
             }
-          });
+          }));
         } catch (error) {
           console.error('Failed to fetch stats:', error);
           const errorMessage = error instanceof Error ? error.message : 'An error occurred';
           setStats(prev => ({
-            properties: { ...prev.properties, isLoading: false, error: errorMessage },
-            users: { ...prev.users, isLoading: false, error: errorMessage },
-            inquiries: { ...prev.inquiries, isLoading: false, error: errorMessage },
-            views: { ...prev.views, isLoading: false, error: errorMessage }
+            ...prev,
+            properties: { ...prev.properties, isLoading: false, error: errorMessage }
           }));
         }
       };
@@ -143,56 +114,7 @@ export default function AdminDashboard() {
       colorClass: 'bg-blue-500',
       onClick: () => router.push('/admin/properties'),
       error: stats.properties.error
-    },
-    {
-      title: 'Active Users',
-      value: stats.users.isLoading ? '...' : stats.users.data?.total || 0,
-      icon: (
-        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ),
-      change: stats.users.data ? { 
-        value: stats.users.data.monthlyChange, 
-        isPositive: stats.users.data.isPositive 
-      } : undefined,
-      colorClass: 'bg-green-500',
-      onClick: () => router.push('/admin/users'),
-      error: stats.users.error
-    },
-    {
-      title: 'New Inquiries',
-      value: stats.inquiries.isLoading ? '...' : stats.inquiries.data?.total || 0,
-      icon: (
-        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-      ),
-      change: stats.inquiries.data ? { 
-        value: stats.inquiries.data.monthlyChange, 
-        isPositive: stats.inquiries.data.isPositive 
-      } : undefined,
-      colorClass: 'bg-purple-500',
-      onClick: () => router.push('/admin/inquiries'),
-      error: stats.inquiries.error
-    },
-    {
-      title: 'Properties Viewed',
-      value: stats.views.isLoading ? '...' : stats.views.data?.total.toLocaleString() || 0,
-      icon: (
-        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
-      ),
-      change: stats.views.data ? { 
-        value: stats.views.data.change, 
-        isPositive: stats.views.data.isPositive 
-      } : undefined,
-      colorClass: 'bg-yellow-500',
-      onClick: () => router.push('/admin/analytics'),
-      error: stats.views.error
-    },
+    }
   ];
 
   const recentActivities = [
