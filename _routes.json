@@ -1,55 +1,63 @@
 {
   "version": 1,
-  "include": ["/*"],
-  "exclude": [],
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/api/*"
+  ],
   "routes": [
     {
-      "src": "^/admin$",
-      "dest": "/admin.html"
+      "src": "/admin$",
+      "dest": "/admin/index.html"
     },
     {
-      "src": "^/admin/$",
-      "dest": "/admin.html"
+      "src": "/admin/login/?$",
+      "dest": "/admin/login/index.html"
     },
     {
-      "src": "^/admin/dashboard/?$",
-      "dest": "/admin.html"
+      "src": "/admin/dashboard/?$",
+      "dest": "/admin/dashboard/index.html"
     },
     {
-      "src": "^/admin/properties/?$",
-      "dest": "/admin.html"
+      "src": "/admin/properties/?$",
+      "dest": "/admin/properties/index.html"
     },
     {
-      "src": "^/admin/developers/?$",
-      "dest": "/admin.html"
+      "src": "/admin/developers/?$",
+      "dest": "/admin/developers/index.html"
     },
     {
-      "src": "^/admin/users/?$",
-      "dest": "/admin.html"
+      "src": "/admin/users/?$",
+      "dest": "/admin/users/index.html"
     },
     {
-      "src": "^/admin/agents/?$",
-      "dest": "/admin.html"
+      "src": "/admin/agents/?$",
+      "dest": "/admin/agents/index.html"
     },
     {
-      "src": "^/admin/settings/?$",
-      "dest": "/admin.html"
+      "src": "/admin/settings/?$",
+      "dest": "/admin/settings/index.html"
     },
     {
-      "src": "^/admin/login/?$",
-      "dest": "/admin.html"
+      "src": "/admin/inquiries/?$",
+      "dest": "/admin/inquiries/index.html"
     },
     {
-      "src": "^/admin/inquiries/?$",
-      "dest": "/admin.html"
+      "src": "/admin/inquiries/[^/]+/?$",
+      "dest": "/admin/inquiries/index.html"
     },
     {
-      "src": "^/admin/.*$",
-      "dest": "/admin.html"
+      "src": "/_next/.*",
+      "dest": "/_next/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "src": "/images/.*",
+      "dest": "/images/$1"
+    },
+    {
+      "src": "/assets/.*",
+      "dest": "/assets/$1"
     }
   ]
 } 

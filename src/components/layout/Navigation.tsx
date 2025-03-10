@@ -59,7 +59,7 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ease-in-out ${
+      <nav className={`fixed top-0 left-0 right-0 z-[999] transition-all duration-500 ease-in-out ${
         isScrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'
       }`}>
         <div className="container mx-auto px-6 md:px-10 max-w-7xl">
@@ -117,7 +117,7 @@ export default function Navigation() {
                 </button>
                 
                 <div 
-                  className={`absolute left-0 mt-2 w-64 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm border border-gray-100 transform transition-all duration-300 origin-top-left z-50 ${
+                  className={`absolute left-0 mt-2 w-64 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm border border-gray-100 transform transition-all duration-300 origin-top-left z-[1000] ${
                     isPropertiesDropdownOpen 
                       ? 'opacity-100 scale-100' 
                       : 'opacity-0 scale-95 pointer-events-none'

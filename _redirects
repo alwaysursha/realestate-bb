@@ -1,43 +1,40 @@
 # Redirects and rewrites for Cloudflare Pages
 
-# Handle admin routes specifically - all admin routes should use admin.html
-/admin                  /admin.html   200
-/admin/                 /admin.html   200
-/admin/dashboard        /admin.html   200
-/admin/dashboard/       /admin.html   200
-/admin/properties       /admin.html   200
-/admin/properties/      /admin.html   200
-/admin/developers       /admin.html   200
-/admin/developers/      /admin.html   200
-/admin/users            /admin.html   200
-/admin/users/           /admin.html   200
-/admin/agents           /admin.html   200
-/admin/agents/          /admin.html   200
-/admin/settings         /admin.html   200
-/admin/settings/        /admin.html   200
-/admin/login            /admin.html   200
-/admin/login/           /admin.html   200
-/admin/inquiries        /admin.html   200
-/admin/inquiries/       /admin.html   200
-/admin/*                /admin.html   200
+# Handle admin routes with proper fallback
+/admin                         /admin/index.html            200
+/admin/login                   /admin/login/index.html      200
+/admin/dashboard/*             /admin/dashboard/index.html  200
+/admin/properties/*            /admin/properties/index.html 200
+/admin/developers/*            /admin/developers/index.html 200
+/admin/users/*                 /admin/users/index.html      200
+/admin/agents/*                /admin/agents/index.html     200
+/admin/settings/*              /admin/settings/index.html   200
+/admin/inquiries/*             /admin/inquiries/index.html  200
 
-# Redirect all other routes to index.html
-/*    /index.html   200
+# Handle static assets
+/_next/*                       /_next/:splat               200
+/images/*                      /images/:splat              200
+/assets/*                      /assets/:splat              200
 
-# Handle static files
-/*.js     /:splat   200
-/*.css    /:splat   200
-/*.png    /:splat   200
-/*.jpg    /:splat   200
-/*.ico    /:splat   200
-/*.svg    /:splat   200
-/*.woff2  /:splat   200
-
-# Handle Next.js static files
-/_next/*  /:splat   200
+# SPA fallback - must be last
+/*                            /index.html                  200
 
 # Redirect www to non-www
 https://www.real-estate-projects.pages.dev/*    https://real-estate-projects.pages.dev/:splat  301!
 
 # Redirect old paths to new paths if needed
 # /old-path    /new-path    301 
+
+# Redirect admin routes to their respective pages
+/admin              /admin/index.html            200
+/admin/login        /admin/login/index.html      200
+/admin/dashboard    /admin/dashboard/index.html   200
+/admin/properties   /admin/properties/index.html  200
+/admin/developers   /admin/developers/index.html  200
+/admin/users        /admin/users/index.html      200
+/admin/agents       /admin/agents/index.html     200
+/admin/settings     /admin/settings/index.html   200
+/admin/inquiries    /admin/inquiries/index.html  200
+
+# Handle all other routes
+/*                  /index.html                  200 

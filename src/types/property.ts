@@ -16,6 +16,7 @@ export interface Property {
   status: string;
   features?: string[];
   amenities?: string[];
+  highlights?: string[];
   images: string[];
   image?: string;
   developerId?: string;
@@ -29,6 +30,12 @@ export interface Property {
     phone: string;
     email: string;
     image: string;
+  };
+  paymentPlan?: {
+    construction: string;
+    handover: string;
+    handoverDate: string;
+    startingPrice: number;
   };
   createdAt?: any;
   updatedAt?: any;

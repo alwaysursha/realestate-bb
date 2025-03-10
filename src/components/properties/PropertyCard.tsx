@@ -82,7 +82,7 @@ export default function PropertyCard({
         </Link>
 
         <div className="p-6 flex flex-col flex-grow">
-          <Link href={`/property/${property.id}`} className="block">
+          <Link href={`/properties/${property.id}`} className="block">
             <h3 className="text-xl font-semibold mb-2 text-gray-800 hover:text-blue-600 transition-colors">{property.title}</h3>
           </Link>
           <p className="text-gray-600 mb-4 flex items-center">
