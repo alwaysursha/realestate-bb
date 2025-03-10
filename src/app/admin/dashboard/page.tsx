@@ -61,15 +61,36 @@ export default function AdminDashboard() {
     if (!authLoading && isAuthenticated) {
       const fetchStats = async () => {
         try {
-          // Fetch property stats
-          setStats(prev => ({
-            ...prev,
-            properties: { ...prev.properties, isLoading: true, error: null }
-          }));
-          const propertyStats = await getPropertyStats();
-          setStats(prev => ({
-            ...prev,
-            properties: { isLoading: false, data: propertyStats, error: null },
+          // Initialize services first
+          await Promise.all([
+            getAllProperties(), // This will initialize the properties service
+            userService.getUsers(), // This will initialize the users service
+            inquiryService.getInquiries() // This will initialize the inquiries service
+          ]);
+
+          // Now fetch the stats
+          const [propertyStats, userStats, inquiryStats] = await Promise.all([
+            getPropertyStats(),
+            userService.getUserStats(),
+            inquiryService.getInquiryStats()
+          ]);
+
+          setStats({
+            properties: { 
+              isLoading: false, 
+              data: propertyStats, 
+              error: null 
+            },
+            users: { 
+              isLoading: false, 
+              data: userStats, 
+              error: null 
+            },
+            inquiries: { 
+              isLoading: false, 
+              data: inquiryStats, 
+              error: null 
+            },
             views: { 
               isLoading: false, 
               data: {
@@ -80,39 +101,15 @@ export default function AdminDashboard() {
               }, 
               error: null 
             }
-          }));
-
-          // Fetch user stats
-          setStats(prev => ({
-            ...prev,
-            users: { ...prev.users, isLoading: true, error: null }
-          }));
-          const userStats = await userService.getUserStats();
-          setStats(prev => ({
-            ...prev,
-            users: { isLoading: false, data: userStats, error: null }
-          }));
-
-          // Fetch inquiry stats
-          setStats(prev => ({
-            ...prev,
-            inquiries: { ...prev.inquiries, isLoading: true, error: null }
-          }));
-          const inquiryStats = await inquiryService.getInquiryStats();
-          setStats(prev => ({
-            ...prev,
-            inquiries: { isLoading: false, data: inquiryStats, error: null }
-          }));
-
+          });
         } catch (error) {
           console.error('Failed to fetch stats:', error);
           const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-          // Update error state for the failed section
           setStats(prev => ({
-            ...prev,
             properties: { ...prev.properties, isLoading: false, error: errorMessage },
             users: { ...prev.users, isLoading: false, error: errorMessage },
-            inquiries: { ...prev.inquiries, isLoading: false, error: errorMessage }
+            inquiries: { ...prev.inquiries, isLoading: false, error: errorMessage },
+            views: { ...prev.views, isLoading: false, error: errorMessage }
           }));
         }
       };
@@ -362,85 +359,14 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}</h1>
-        <p className="text-gray-600 mt-2">Manage your real estate platform</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {statistics.map((stat, index) => (
+          <StatsCard key={index} {...stat} />
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Properties Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Properties</h2>
-          <p className="text-gray-600">Manage your property listings</p>
-          <button
-            onClick={() => router.push('/admin/properties')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Properties
-          </button>
-        </div>
-
-        {/* Developers Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Developers</h2>
-          <p className="text-gray-600">Manage property developers</p>
-          <button
-            onClick={() => router.push('/admin/developers')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Developers
-          </button>
-        </div>
-
-        {/* Agents Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Agents</h2>
-          <p className="text-gray-600">Manage real estate agents</p>
-          <button
-            onClick={() => router.push('/admin/agents')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Agents
-          </button>
-        </div>
-
-        {/* Inquiries Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Inquiries</h2>
-          <p className="text-gray-600">View and manage customer inquiries</p>
-          <button
-            onClick={() => router.push('/admin/inquiries')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Inquiries
-          </button>
-        </div>
-
-        {/* Users Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Users</h2>
-          <p className="text-gray-600">Manage user accounts</p>
-          <button
-            onClick={() => router.push('/admin/users')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Users
-          </button>
-        </div>
-
-        {/* Settings Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Settings</h2>
-          <p className="text-gray-600">Configure system settings</p>
-          <button
-            onClick={() => router.push('/admin/settings')}
-            className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            View Settings
-          </button>
-        </div>
-      </div>
+      {/* Rest of your dashboard content */}
     </div>
   );
 } 
