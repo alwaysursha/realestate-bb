@@ -2,6 +2,7 @@ import { Property } from '@/types/property';
 import { getAllProperties, getPropertyStats, getViewsData } from './propertiesService';
 import { inquiryService } from './inquiryService';
 import { userService } from './userService';
+import { StatsData } from '@/types/stats';
 
 export interface ReportData {
   date: string;
@@ -87,6 +88,17 @@ export const reportService = {
       console.error('Error generating report:', error);
       throw new Error('Failed to generate report');
     }
+  },
+  
+  async getViewStats(): Promise<StatsData> {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      total: Math.floor(Math.random() * 10000),
+      monthlyChange: Math.floor(Math.random() * 100),
+      isPositive: Math.random() > 0.5
+    };
   },
   
   // Convert report data to CSV format

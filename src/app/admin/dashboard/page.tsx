@@ -73,19 +73,37 @@ export default function AdminDashboard() {
 
       console.log('Fetching stats...');
       try {
-        // Initialize properties service
+        // Initialize services and fetch stats
         await getAllProperties();
+        const [propertyStats, userStats, inquiryStats, viewStats] = await Promise.all([
+          getPropertyStats(),
+          userService.getUserStats(),
+          inquiryService.getInquiryStats(),
+          reportService.getViewStats()
+        ]);
         
-        // Fetch property stats
-        const propertyStats = await getPropertyStats();
-        console.log('Stats fetched:', propertyStats);
+        console.log('Stats fetched:', { propertyStats, userStats, inquiryStats, viewStats });
 
         setStats(prev => ({
-          ...prev,
           properties: { 
             isLoading: false, 
             data: propertyStats, 
             error: null 
+          },
+          users: {
+            isLoading: false,
+            data: userStats,
+            error: null
+          },
+          inquiries: {
+            isLoading: false,
+            data: inquiryStats,
+            error: null
+          },
+          views: {
+            isLoading: false,
+            data: viewStats,
+            error: null
           }
         }));
       } catch (error) {
@@ -93,7 +111,10 @@ export default function AdminDashboard() {
         const errorMessage = error instanceof Error ? error.message : 'An error occurred';
         setStats(prev => ({
           ...prev,
-          properties: { ...prev.properties, isLoading: false, error: errorMessage }
+          properties: { ...prev.properties, isLoading: false, error: errorMessage },
+          users: { ...prev.users, isLoading: false, error: errorMessage },
+          inquiries: { ...prev.inquiries, isLoading: false, error: errorMessage },
+          views: { ...prev.views, isLoading: false, error: errorMessage }
         }));
       }
     };
@@ -122,6 +143,55 @@ export default function AdminDashboard() {
       colorClass: 'bg-blue-500',
       onClick: () => router.push('/admin/properties'),
       error: stats.properties.error
+    },
+    {
+      title: 'Total Users',
+      value: stats.users.isLoading ? '...' : stats.users.data?.total || 0,
+      icon: (
+        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+      change: stats.users.data ? { 
+        value: stats.users.data.monthlyChange, 
+        isPositive: stats.users.data.isPositive 
+      } : undefined,
+      colorClass: 'bg-green-500',
+      onClick: () => router.push('/admin/users'),
+      error: stats.users.error
+    },
+    {
+      title: 'Total Inquiries',
+      value: stats.inquiries.isLoading ? '...' : stats.inquiries.data?.total || 0,
+      icon: (
+        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      ),
+      change: stats.inquiries.data ? { 
+        value: stats.inquiries.data.monthlyChange, 
+        isPositive: stats.inquiries.data.isPositive 
+      } : undefined,
+      colorClass: 'bg-yellow-500',
+      onClick: () => router.push('/admin/inquiries'),
+      error: stats.inquiries.error
+    },
+    {
+      title: 'Total Views',
+      value: stats.views.isLoading ? '...' : stats.views.data?.total || 0,
+      icon: (
+        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+      change: stats.views.data ? { 
+        value: stats.views.data.monthlyChange, 
+        isPositive: stats.views.data.isPositive 
+      } : undefined,
+      colorClass: 'bg-purple-500',
+      onClick: () => router.push('/admin/analytics'),
+      error: stats.views.error
     }
   ];
 
@@ -290,13 +360,148 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statistics.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
       </div>
 
-      {/* Rest of your dashboard content */}
+      {/* Recent Activities and Popular Properties */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activities */}
+        <AdminCard title="Recent Activities">
+          <div className="space-y-4">
+            {recentActivities.map((activity, index) => (
+              <ActivityItem key={index} {...activity} />
+            ))}
+          </div>
+        </AdminCard>
+
+        {/* Popular Properties */}
+        <AdminCard title="Popular Properties">
+          <div className="space-y-4">
+            {popularProperties.map((property, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                <div>
+                  <h4 className="font-medium text-gray-900">{property.title}</h4>
+                  <div className="flex space-x-4 mt-1 text-sm text-gray-500">
+                    <span>{property.views} views</span>
+                    <span>{property.favorites} favorites</span>
+                    <span>{property.inquiries} inquiries</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminCard>
+      </div>
+
+      {/* Recent Logins and Quick Notes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Logins */}
+        <AdminCard title="Recent Logins">
+          <div className="space-y-4">
+            {recentLogins.map((login, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    {login.user.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{login.user.name}</p>
+                    <div className="flex space-x-4 text-sm text-gray-500">
+                      <span>{login.device}</span>
+                      <span>{login.location}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500">{login.timestamp}</span>
+                  <span className={`ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    login.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {login.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminCard>
+
+        {/* Quick Notes */}
+        <AdminCard title="Quick Notes">
+          <div className="space-y-4">
+            {/* Add Note Form */}
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Add a note..."
+                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              <select
+                value={notePriority}
+                onChange={(e) => setNotePriority(e.target.value)}
+                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <button
+                onClick={addNote}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Notes List */}
+            <div className="space-y-2">
+              {notes.map((note) => (
+                <div key={note.id} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                  <div className="flex-1">
+                    <p className="text-gray-900">{note.content}</p>
+                    <div className="flex space-x-4 mt-1 text-sm text-gray-500">
+                      <span>{note.timestamp}</span>
+                      <span className={`capitalize ${
+                        note.priority === 'high' ? 'text-red-600' :
+                        note.priority === 'medium' ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {note.priority} priority
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteNote(note.id)}
+                    className="ml-4 text-red-600 hover:text-red-800"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AdminCard>
+      </div>
+
+      {/* Generate Report Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleGenerateReport}
+          disabled={isGeneratingReport}
+          className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            isGeneratingReport ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {isGeneratingReport ? 'Generating Report...' : 'Generate Report'}
+        </button>
+      </div>
     </div>
   );
 } 
