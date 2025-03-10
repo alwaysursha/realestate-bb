@@ -139,7 +139,7 @@ export default function AdminDashboard() {
       change: stats.properties.data ? { 
         value: stats.properties.data.monthlyChange, 
         isPositive: stats.properties.data.isPositive 
-      } : null,
+      } : undefined,
       colorClass: 'bg-blue-500',
       onClick: () => router.push('/admin/properties'),
       error: stats.properties.error
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
       change: stats.users.data ? { 
         value: stats.users.data.monthlyChange, 
         isPositive: stats.users.data.isPositive 
-      } : null,
+      } : undefined,
       colorClass: 'bg-green-500',
       onClick: () => router.push('/admin/users'),
       error: stats.users.error
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
       change: stats.inquiries.data ? { 
         value: stats.inquiries.data.monthlyChange, 
         isPositive: stats.inquiries.data.isPositive 
-      } : null,
+      } : undefined,
       colorClass: 'bg-purple-500',
       onClick: () => router.push('/admin/inquiries'),
       error: stats.inquiries.error
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
       change: stats.views.data ? { 
         value: stats.views.data.change, 
         isPositive: stats.views.data.isPositive 
-      } : null,
+      } : undefined,
       colorClass: 'bg-yellow-500',
       onClick: () => router.push('/admin/analytics'),
       error: stats.views.error
