@@ -13,20 +13,18 @@ export default function AdminLogin() {
   const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const router = useRouter();
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.replace('/admin/dashboard');
-    }
-  }, [isAuthenticated, authLoading, router]);
-
   // Don't render the login form if already authenticated or loading
-  if (authLoading || isAuthenticated) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
+  }
+
+  // If already authenticated, the AdminAuthContext will handle redirection
+  if (isAuthenticated) {
+    return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,15 +53,11 @@ export default function AdminLogin() {
     try {
       console.log('Calling login function from context');
       await login(email, password);
-      console.log('Login successful');
-      toast.success('Login successful');
-      
       // The AdminAuthContext will handle redirection
     } catch (err: any) {
       console.error('Login error caught in handleSubmit:', err);
       setError(err.message || 'Invalid email or password');
     } finally {
-      console.log('Setting loading state to false');
       setIsLoading(false);
     }
   };

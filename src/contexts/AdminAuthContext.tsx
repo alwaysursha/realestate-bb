@@ -45,28 +45,33 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!mounted) return;
 
-      if (firebaseUser) {
-        // Check if the user is the admin
-        if (firebaseUser.email === ADMIN_EMAIL) {
-          console.log('Admin user authenticated');
-          setUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Admin User',
-            email: firebaseUser.email || ADMIN_EMAIL,
-            role: 'admin'
-          });
+      try {
+        if (firebaseUser) {
+          // Check if the user is the admin
+          if (firebaseUser.email === ADMIN_EMAIL) {
+            console.log('Admin user authenticated');
+            setUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Admin User',
+              email: firebaseUser.email || ADMIN_EMAIL,
+              role: 'admin'
+            });
+          } else {
+            console.log('User is not an admin, logging out');
+            await signOut(auth);
+            setUser(null);
+            toast.error('You do not have admin privileges');
+          }
         } else {
-          console.log('User is not an admin, logging out');
-          await signOut(auth);
+          console.log('No user authenticated');
           setUser(null);
-          toast.error('You do not have admin privileges');
         }
-      } else {
-        console.log('No user authenticated');
+      } catch (error) {
+        console.error('Error in auth state change:', error);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
     
     return () => {
@@ -85,6 +90,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       // Only handle routing for admin paths
       if (!pathname.startsWith('/admin')) return;
 
+      console.log('Handling admin routing:', { pathname, isAuthenticated: !!user });
+
       // If at admin root, redirect appropriately
       if (pathname === '/admin' || pathname === '/admin/') {
         if (user) {
@@ -96,13 +103,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // If not authenticated and not on login page, redirect to login
-      if (!user && !pathname.includes('/admin/login')) {
+      if (!user && pathname !== '/admin/login') {
+        console.log('Redirecting to login page');
         router.replace('/admin/login');
         return;
       }
 
       // If authenticated and on login page, redirect to dashboard
-      if (user && pathname.includes('/admin/login')) {
+      if (user && pathname === '/admin/login') {
+        console.log('Redirecting to dashboard');
         router.replace('/admin/dashboard');
         return;
       }
@@ -113,6 +122,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
+      
       if (email !== ADMIN_EMAIL) {
         throw new Error('You do not have admin privileges');
       }
@@ -134,11 +145,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(userData);
       toast.success('Login successful');
-      router.replace('/admin/dashboard');
+      // Let the routing effect handle the redirect
     } catch (error: any) {
       console.error('Error in login function:', error);
       toast.error(error.message || 'Login failed');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,7 +160,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       await signOut(auth);
       setUser(null);
-      await router.push('/admin/login');
+      router.replace('/admin/login');
       toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
