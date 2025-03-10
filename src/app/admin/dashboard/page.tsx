@@ -58,44 +58,50 @@ export default function AdminDashboard() {
 
   // Fetch stats when component mounts and is authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      const fetchStats = async () => {
-        try {
-          // Initialize properties service only
-          await getAllProperties();
+    console.log('Dashboard useEffect:', { authLoading, isAuthenticated });
+    
+    const fetchStats = async () => {
+      try {
+        console.log('Fetching property stats...');
+        // Initialize properties service only
+        await getAllProperties();
 
-          // Now fetch the property stats
-          const propertyStats = await getPropertyStats();
+        // Now fetch the property stats
+        const propertyStats = await getPropertyStats();
+        console.log('Property stats fetched:', propertyStats);
 
-          setStats(prev => ({
-            ...prev,
-            properties: { 
-              isLoading: false, 
-              data: propertyStats, 
-              error: null 
-            }
-          }));
-        } catch (error) {
-          console.error('Failed to fetch stats:', error);
-          const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-          setStats(prev => ({
-            ...prev,
-            properties: { ...prev.properties, isLoading: false, error: errorMessage }
-          }));
-        }
-      };
+        setStats(prev => ({
+          ...prev,
+          properties: { 
+            isLoading: false, 
+            data: propertyStats, 
+            error: null 
+          }
+        }));
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+        setStats(prev => ({
+          ...prev,
+          properties: { ...prev.properties, isLoading: false, error: errorMessage }
+        }));
+      }
+    };
 
+    if (isAuthenticated) {
+      console.log('User is authenticated, fetching stats...');
       fetchStats();
     }
-  }, [authLoading, isAuthenticated]);
+  }, [isAuthenticated]);
 
-  // Show loading state while authenticating
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  // Let the layout handle the authentication loading state
+  if (authLoading) {
+    return null;
+  }
+
+  // Let the layout handle the authentication check
+  if (!isAuthenticated) {
+    return null;
   }
 
   const statistics = [

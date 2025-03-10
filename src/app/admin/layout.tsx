@@ -31,27 +31,45 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // If still loading authentication state, show loading spinner
+  console.log('AdminLayoutContent render:', { 
+    pathname, 
+    isLoading, 
+    isAuthenticated,
+    isLoginPage: pathname?.includes('/admin/login')
+  });
+
+  // If on login page and not authenticated, show login page
+  if (pathname?.includes('/admin/login') && !isAuthenticated) {
+    return children;
+  }
+
+  // If loading, show loading spinner
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  // If not authenticated and not on login page, show loading while redirecting
-  if (!isAuthenticated && !pathname?.includes('/admin/login')) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If not authenticated, just render the children (login page)
+  // If not authenticated and not on login page, redirect to login
   if (!isAuthenticated) {
-    return children;
+    router.replace('/admin/login');
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // If authenticated and on login page, redirect to dashboard
+  if (isAuthenticated && pathname?.includes('/admin/login')) {
+    router.replace('/admin/dashboard');
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   // Navigation items
