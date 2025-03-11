@@ -14,16 +14,31 @@ class UserService {
       }));
     }
     
-    const stored = localStorage.getItem(USERS_STORAGE_KEY);
-    if (!stored) {
-      this.saveUsersToStorage(initialUsers);
-      return initialUsers;
+    try {
+      const stored = localStorage.getItem(USERS_STORAGE_KEY);
+      if (!stored) {
+        const usersWithDates = initialUsers.map(user => ({
+          ...user,
+          createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+          lastLogin: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+        }));
+        this.saveUsersToStorage(usersWithDates);
+        return usersWithDates;
+      }
+      
+      return JSON.parse(stored, (key, value) => {
+        if (key === 'createdAt' || key === 'lastLogin') return new Date(value);
+        return value;
+      });
+    } catch (error) {
+      console.error('Error getting users from storage:', error);
+      // Return default data if there's an error
+      return initialUsers.map(user => ({
+        ...user,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+        lastLogin: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+      }));
     }
-    
-    return JSON.parse(stored, (key, value) => {
-      if (key === 'createdAt' || key === 'lastLogin') return new Date(value);
-      return value;
-    });
   }
 
   private saveUsersToStorage(users: User[]): void {

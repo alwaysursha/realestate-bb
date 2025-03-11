@@ -12,6 +12,8 @@ import { getAllProperties, getPropertyStats } from '@/services/propertiesService
 import { userService } from '@/services/userService';
 import { inquiryService } from '@/services/inquiryService';
 import { reportService } from '@/services/reportService';
+import { User } from '@/types/user';
+import { Inquiry } from '@/types/inquiry';
 
 interface StatsData {
   total: number;
@@ -51,9 +53,9 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<StatsState>({
     properties: { isLoading: true, data: null, error: null },
-    users: { isLoading: false, data: null, error: null },
-    inquiries: { isLoading: false, data: null, error: null },
-    views: { isLoading: false, data: null, error: null }
+    users: { isLoading: true, data: null, error: null },
+    inquiries: { isLoading: true, data: null, error: null },
+    views: { isLoading: true, data: null, error: null }
   });
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
@@ -74,40 +76,71 @@ export default function AdminDashboard() {
 
       console.log('Fetching stats...');
       try {
-        // Initialize mock data for testing
-        const mockStats = {
-          total: 100,
-          monthlyChange: 10,
-          isPositive: true
-        };
-
-        const mockViewStats = {
-          ...mockStats,
-          change: 15
-        };
-
-        setStats({
-          properties: { 
-            isLoading: false, 
-            data: mockStats, 
-            error: null 
-          },
-          users: {
+        // Fetch property stats
+        const propertyStats = await getPropertyStats();
+        setStats(prev => ({
+          ...prev,
+          properties: {
             isLoading: false,
-            data: mockStats,
-            error: null
-          },
-          inquiries: {
-            isLoading: false,
-            data: mockStats,
+            data: {
+              total: propertyStats.total,
+              monthlyChange: propertyStats.monthlyChange,
+              isPositive: propertyStats.isPositive
+            },
             error: null
           },
           views: {
             isLoading: false,
-            data: mockViewStats,
+            data: {
+              total: propertyStats.totalViews || 0,
+              monthlyChange: propertyStats.viewsChange || 0,
+              isPositive: propertyStats.isViewsChangePositive || false,
+              change: propertyStats.viewsChange || 0
+            },
             error: null
           }
-        });
+        }));
+
+        // Fetch user stats
+        const users = await userService.getUsers();
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        const currentMonthUsers = users.filter((user: User) => new Date(user.createdAt) >= lastMonth).length;
+        const previousMonthUsers = users.filter((user: User) => new Date(user.createdAt) < lastMonth).length;
+        const userChange = previousMonthUsers === 0 ? 100 : ((currentMonthUsers / previousMonthUsers) - 1) * 100;
+
+        setStats(prev => ({
+          ...prev,
+          users: {
+            isLoading: false,
+            data: {
+              total: users.length,
+              monthlyChange: Math.abs(Math.round(userChange)),
+              isPositive: userChange >= 0
+            },
+            error: null
+          }
+        }));
+
+        // Fetch inquiry stats
+        const inquiries = await inquiryService.getInquiries();
+        const currentMonthInquiries = inquiries.filter((inq: Inquiry) => new Date(inq.createdAt) >= lastMonth).length;
+        const previousMonthInquiries = inquiries.filter((inq: Inquiry) => new Date(inq.createdAt) < lastMonth).length;
+        const inquiryChange = previousMonthInquiries === 0 ? 100 : ((currentMonthInquiries / previousMonthInquiries) - 1) * 100;
+
+        setStats(prev => ({
+          ...prev,
+          inquiries: {
+            isLoading: false,
+            data: {
+              total: inquiries.length,
+              monthlyChange: Math.abs(Math.round(inquiryChange)),
+              isPositive: inquiryChange >= 0
+            },
+            error: null
+          }
+        }));
+
       } catch (error) {
         console.error('Failed to fetch stats:', error);
         const errorMessage = error instanceof Error ? error.message : 'An error occurred';
@@ -125,10 +158,13 @@ export default function AdminDashboard() {
   }, [isAuthenticated]);
 
   // Show loading state while fetching data
-  if (stats.properties.isLoading) {
+  if (stats.properties.isLoading || stats.users.isLoading || stats.inquiries.isLoading || stats.views.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="large" />
+        <div className="text-center">
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
       </div>
     );
   }
@@ -136,7 +172,7 @@ export default function AdminDashboard() {
   const statistics = [
     {
       title: 'Total Properties',
-      value: stats.properties.isLoading ? '...' : stats.properties.data?.total || 0,
+      value: stats.properties.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -152,7 +188,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Users',
-      value: stats.users.isLoading ? '...' : stats.users.data?.total || 0,
+      value: stats.users.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -168,7 +204,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Inquiries',
-      value: stats.inquiries.isLoading ? '...' : stats.inquiries.data?.total || 0,
+      value: stats.inquiries.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -184,7 +220,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Views',
-      value: stats.views.isLoading ? '...' : stats.views.data?.total || 0,
+      value: stats.views.data?.total || 0,
       icon: (
         <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -369,7 +405,16 @@ export default function AdminDashboard() {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statistics.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
+          <StatsCard
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            change={stat.change}
+            colorClass={stat.colorClass}
+            onClick={stat.onClick}
+            error={stat.error}
+          />
         ))}
       </div>
 

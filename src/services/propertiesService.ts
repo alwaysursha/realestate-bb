@@ -16,27 +16,41 @@ function getPropertiesFromStorage(): Property[] {
     }));
   }
   
-  const stored = localStorage.getItem('properties');
-  if (!stored) {
-    // Initialize with all properties from the data file and add createdAt dates
-    const propertiesWithDates = allProperties.map(prop => ({
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      // Initialize with all properties from the data file and add createdAt dates
+      const propertiesWithDates = allProperties.map(prop => ({
+        ...prop,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+        viewCount: Math.floor(Math.random() * 1000)
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(propertiesWithDates));
+      return propertiesWithDates;
+    }
+    return JSON.parse(stored, (key, value) => {
+      if (key === 'createdAt' || key === 'lastViewed') return new Date(value);
+      return value;
+    });
+  } catch (error) {
+    console.error('Error getting properties from storage:', error);
+    // Return default data if there's an error
+    return allProperties.map(prop => ({
       ...prop,
       createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
       viewCount: Math.floor(Math.random() * 1000)
     }));
-    localStorage.setItem('properties', JSON.stringify(propertiesWithDates));
-    return propertiesWithDates;
   }
-  return JSON.parse(stored, (key, value) => {
-    if (key === 'createdAt' || key === 'lastViewed') return new Date(value);
-    return value;
-  });
 }
 
 // Function to save properties to localStorage
 function savePropertiesToStorage(properties: Property[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('properties', JSON.stringify(properties));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(properties));
+  } catch (error) {
+    console.error('Error saving properties to storage:', error);
+  }
 }
 
 // Calculate month-over-month change in properties
@@ -48,45 +62,57 @@ export const getPropertyStats = async (): Promise<{
   viewsChange?: number;
   isViewsChangePositive?: boolean;
 }> => {
-  const properties = await getAllProperties();
-  const now = new Date();
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+  try {
+    const properties = await getAllProperties();
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
-  // Count properties created in the current month
-  const currentMonthProperties = properties.filter(
-    prop => prop.createdAt >= lastMonth
-  ).length;
+    // Count properties created in the current month
+    const currentMonthProperties = properties.filter(
+      prop => prop.createdAt >= lastMonth
+    ).length;
 
-  // Count properties that existed last month
-  const previousMonthProperties = properties.filter(
-    prop => prop.createdAt < lastMonth
-  ).length;
+    // Count properties that existed last month
+    const previousMonthProperties = properties.filter(
+      prop => prop.createdAt < lastMonth
+    ).length;
 
-  // Calculate percentage change
-  const change = previousMonthProperties === 0 
-    ? 100 // If there were no properties last month, treat as 100% increase
-    : ((currentMonthProperties / previousMonthProperties) - 1) * 100;
+    // Calculate percentage change
+    const change = previousMonthProperties === 0 
+      ? 100 // If there were no properties last month, treat as 100% increase
+      : ((currentMonthProperties / previousMonthProperties) - 1) * 100;
 
-  // Calculate view statistics
-  const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
-  
-  // Get views from last month for comparison
-  const viewsData = await getViewsData();
-  const lastMonthViews = viewsData.lastMonthViews || 0;
-  
-  // Calculate views change percentage
-  const viewsChange = lastMonthViews === 0
-    ? 100
-    : ((totalViews - lastMonthViews) / lastMonthViews) * 100;
+    // Calculate view statistics
+    const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
+    
+    // Get views from last month for comparison
+    const viewsData = await getViewsData();
+    const lastMonthViews = viewsData.lastMonthViews || 0;
+    
+    // Calculate views change percentage
+    const viewsChange = lastMonthViews === 0
+      ? 100
+      : ((totalViews - lastMonthViews) / lastMonthViews) * 100;
 
-  return {
-    total: properties.length,
-    monthlyChange: Math.abs(Math.round(change)),
-    isPositive: change >= 0,
-    totalViews,
-    viewsChange: Math.abs(Math.round(viewsChange)),
-    isViewsChangePositive: viewsChange >= 0
-  };
+    return {
+      total: properties.length,
+      monthlyChange: Math.abs(Math.round(change)),
+      isPositive: change >= 0,
+      totalViews,
+      viewsChange: Math.abs(Math.round(viewsChange)),
+      isViewsChangePositive: viewsChange >= 0
+    };
+  } catch (error) {
+    console.error('Error getting property stats:', error);
+    return {
+      total: 0,
+      monthlyChange: 0,
+      isPositive: true,
+      totalViews: 0,
+      viewsChange: 0,
+      isViewsChangePositive: true
+    };
+  }
 };
 
 // Track a property view
@@ -135,121 +161,167 @@ export const getViewsData = async (): Promise<{
     };
   }
   
-  const stored = localStorage.getItem(VIEWS_STORAGE_KEY);
-  if (!stored) {
-    const properties = await getAllProperties();
-    const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
-    const viewsData = {
+  try {
+    const stored = localStorage.getItem(VIEWS_STORAGE_KEY);
+    if (!stored) {
+      const properties = await getAllProperties();
+      const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
+      const viewsData = {
+        totalViews,
+        lastMonthViews: Math.floor(totalViews * 0.8),
+        thisMonthViews: Math.floor(totalViews * 0.2),
+        lastUpdated: new Date()
+      };
+      localStorage.setItem(VIEWS_STORAGE_KEY, JSON.stringify(viewsData));
+      return viewsData;
+    }
+    
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Error getting views data:', error);
+    const totalViews = Math.floor(Math.random() * 10000);
+    return {
       totalViews,
       lastMonthViews: Math.floor(totalViews * 0.8),
-      thisMonthViews: Math.floor(totalViews * 0.2),
-      lastUpdated: new Date()
+      thisMonthViews: Math.floor(totalViews * 0.2)
     };
-    localStorage.setItem(VIEWS_STORAGE_KEY, JSON.stringify(viewsData));
-    return viewsData;
   }
-  
-  return JSON.parse(stored);
 };
 
 // Update views data
 export const updateViewsData = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
   
-  const properties = await getAllProperties();
-  const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
-  
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  
-  // Get properties viewed this month
-  const thisMonthViews = properties.reduce((sum, prop) => {
-    if (prop.lastViewed) {
-      const viewDate = new Date(prop.lastViewed);
-      if (viewDate.getMonth() === currentMonth && viewDate.getFullYear() === currentYear) {
-        return sum + (prop.viewCount || 0);
+  try {
+    const properties = await getAllProperties();
+    const totalViews = properties.reduce((sum, prop) => sum + (prop.viewCount || 0), 0);
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Get properties viewed this month
+    const thisMonthViews = properties.reduce((sum, prop) => {
+      if (prop.lastViewed) {
+        const viewDate = new Date(prop.lastViewed);
+        if (viewDate.getMonth() === currentMonth && viewDate.getFullYear() === currentYear) {
+          return sum + (prop.viewCount || 0);
+        }
       }
-    }
-    return sum;
-  }, 0);
-  
-  // Calculate last month's views
-  const lastMonthViews = totalViews - thisMonthViews;
-  
-  const viewsData = {
-    totalViews,
-    lastMonthViews,
-    thisMonthViews,
-    lastUpdated: now
-  };
-  
-  localStorage.setItem(VIEWS_STORAGE_KEY, JSON.stringify(viewsData));
+      return sum;
+    }, 0);
+    
+    // Calculate last month's views
+    const lastMonthViews = totalViews - thisMonthViews;
+    
+    const viewsData = {
+      totalViews,
+      lastMonthViews,
+      thisMonthViews,
+      lastUpdated: now
+    };
+    
+    localStorage.setItem(VIEWS_STORAGE_KEY, JSON.stringify(viewsData));
+  } catch (error) {
+    console.error('Error updating views data:', error);
+  }
 };
 
 // Get all properties
 export const getAllProperties = async (): Promise<Property[]> => {
-  // No artificial delay in production
-  return getPropertiesFromStorage();
+  try {
+    return getPropertiesFromStorage();
+  } catch (error) {
+    console.error('Error getting all properties:', error);
+    return allProperties.map(prop => ({
+      ...prop,
+      createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+      viewCount: Math.floor(Math.random() * 1000)
+    }));
+  }
 };
 
 // Get property by ID
 export const getPropertyById = async (id: number | string): Promise<Property | null> => {
-  const properties = await getAllProperties();
-  const numId = typeof id === 'string' ? parseInt(id) : id;
-  return properties.find(property => property.id === numId) || null;
+  try {
+    const properties = await getAllProperties();
+    const numId = typeof id === 'string' ? parseInt(id) : id;
+    return properties.find(property => property.id === numId) || null;
+  } catch (error) {
+    console.error('Error getting property by ID:', error);
+    return null;
+  }
 };
 
 // Get properties by category
 export const getPropertiesByCategory = async (category: Property['category']): Promise<Property[]> => {
-  const properties = await getAllProperties();
-  return properties.filter(property => property.category === category);
+  try {
+    const properties = await getAllProperties();
+    return properties.filter(property => property.category === category);
+  } catch (error) {
+    console.error('Error getting properties by category:', error);
+    return [];
+  }
 };
 
 // Get featured properties
 export const getFeaturedProperties = async (): Promise<Property[]> => {
-  const properties = await getAllProperties();
-  return properties.filter(property => property.isFeatured);
+  try {
+    const properties = await getAllProperties();
+    return properties.filter(property => property.isFeatured);
+  } catch (error) {
+    console.error('Error getting featured properties:', error);
+    return [];
+  }
 };
 
 // Get properties by section (Villas & Townhouses or Apartments & Penthouses)
 export const getPropertiesBySection = async (section: 'villas' | 'apartments'): Promise<Property[]> => {
-  const properties = await getAllProperties();
-  if (section === 'villas') {
-    return properties.filter(property => 
-      property.category === 'Villa' || 
-      property.category === 'Semi' || 
-      property.category === 'Townhouse'
-    );
-  } else {
-    return properties.filter(property => 
-      property.category === 'Apartment' || 
-      property.category === 'Penthouse'
-    );
+  try {
+    const properties = await getAllProperties();
+    if (section === 'villas') {
+      return properties.filter(property => 
+        property.category === 'Villa' || 
+        property.category === 'Semi' || 
+        property.category === 'Townhouse'
+      );
+    } else {
+      return properties.filter(property => 
+        property.category === 'Apartment' || 
+        property.category === 'Penthouse'
+      );
+    }
+  } catch (error) {
+    console.error('Error getting properties by section:', error);
+    return [];
   }
 };
 
 // Add new property
 export const addProperty = async (property: Omit<Property, 'id'>): Promise<Property> => {
-  const properties = await getAllProperties();
-  
-  // Generate a new ID
-  const maxId = Math.max(...properties
-    .filter(p => p.id !== undefined)
-    .map(p => typeof p.id === 'string' ? parseInt(p.id) : (p.id as number)), 0);
-  const newId = maxId + 1;
-  
-  const newProperty: Property = {
-    ...property,
-    id: newId,
-    createdAt: new Date(), // Set creation date for new properties
-    viewCount: 0 // Initialize view count
-  };
-  
-  const updatedProperties = [...properties, newProperty];
-  savePropertiesToStorage(updatedProperties);
-  
-  return newProperty;
+  try {
+    const properties = await getAllProperties();
+    
+    // Generate a new ID
+    const maxId = Math.max(...properties
+      .filter(p => p.id !== undefined)
+      .map(p => typeof p.id === 'string' ? parseInt(p.id) : (p.id as number)), 0);
+    const newId = maxId + 1;
+    
+    const newProperty: Property = {
+      ...property,
+      id: newId,
+      createdAt: new Date(),
+      viewCount: 0
+    };
+    
+    const updatedProperties = [...properties, newProperty];
+    savePropertiesToStorage(updatedProperties);
+    return newProperty;
+  } catch (error) {
+    console.error('Error adding property:', error);
+    throw new Error('Failed to add property');
+  }
 };
 
 // Update property

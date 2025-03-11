@@ -37,8 +37,8 @@ export interface Property {
     handoverDate: string;
     startingPrice: number;
   };
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt: Date;
+  updatedAt?: Date;
   lastViewed?: Date;
   featured?: boolean;
   isFeatured?: boolean;

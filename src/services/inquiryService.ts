@@ -14,15 +14,19 @@ class InquiryService {
       }));
     }
     
-    const stored = localStorage.getItem(this.storageKey);
-    if (!stored) {
-      // Initialize with default inquiries
-      const defaultInquiries = this.createDefaultInquiries();
-      this.saveInquiriesToStorage(defaultInquiries);
-      return defaultInquiries;
-    }
-
     try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) {
+        // Initialize with default inquiries
+        const defaultInquiries = this.createDefaultInquiries().map(inquiry => ({
+          ...inquiry,
+          createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+          updatedAt: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+        }));
+        this.saveInquiriesToStorage(defaultInquiries);
+        return defaultInquiries;
+      }
+
       const inquiries = JSON.parse(stored);
       return inquiries.map((inquiry: any) => ({
         ...inquiry,
@@ -39,7 +43,12 @@ class InquiryService {
       }));
     } catch (error) {
       console.error('Error parsing inquiries:', error);
-      return [];
+      // Return default data if there's an error
+      return this.createDefaultInquiries().map(inquiry => ({
+        ...inquiry,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)),
+        updatedAt: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+      }));
     }
   }
 
@@ -67,6 +76,34 @@ class InquiryService {
           changedBy: 'system'
         }],
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+      },
+      {
+        id: '2',
+        propertyId: '2',
+        propertySnapshot: {
+          id: '2',
+          title: 'Modern Apartment',
+          price: 800000,
+          location: 'Downtown',
+          mainImage: '/images/properties/apartment1.jpg'
+        },
+        name: 'Jane Smith',
+        email: 'jane@example.com',
+        phone: '+1234567891',
+        message: 'When can I schedule a viewing?',
+        status: 'In Progress',
+        notes: [],
+        statusHistory: [{
+          status: 'New',
+          changedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+          changedBy: 'system'
+        }, {
+          status: 'In Progress',
+          changedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          changedBy: 'admin'
+        }],
+        createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
         updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
       }
     ];
